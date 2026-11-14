@@ -129,3 +129,18 @@ No introducir Redis, Kafka, Kubernetes ni Airflow en el MVP. Los procesos largos
 - [PostgreSQL 18.7](https://www.postgresql.org/docs/release/18.7/)
 - [PostGIS 3.7.0](https://postgis.net/2026/10/PostGIS-3.7.0/)
 - [pytest releases](https://github.com/pytest-dev/pytest/releases)
+
+
+## 7. Consideraciones de escala continental para LACI
+
+El stack es compartido, pero la ejecución debe ser regional y medible:
+- El catálogo geográfico y los metadatos de disponibilidad cubren Latinoamérica y Caribe desde el diseño.
+- La ingesta se particiona por fuente, variable, periodo y región; jobs idempotentes y reanudables.
+- Xarray/Dask debe operar por chunks espacio-temporales medidos; no cargar ni descargar el histórico continental completo en memoria.
+- Zarr/NetCDF y object storage contienen cubos; PostGIS conserva geometrías, catálogo, metadatos y resúmenes.
+- Registrar coste/volumen/tiempo de procesamiento por región para dimensionar infraestructura antes de escalar.
+- No añadir Kafka, Kubernetes, Redis o Airflow hasta demostrar necesidad.
+- Cada modelo regional debe versionar datos, features, artefacto y métricas por horizonte; el stack no presupone pesos compartidos.
+- La expansión de regiones no requiere cambiar de framework: se amplía catálogo, QA, jobs y registro de modelos.
+
+La elección de versiones de librerías no cambia por el alcance continental. Codex debe verificar compatibilidad real con los datos y el entorno del repositorio, y congelar las versiones resueltas en lockfiles.
