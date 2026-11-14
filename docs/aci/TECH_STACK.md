@@ -1,112 +1,131 @@
 # Stack tecnológico y política de versiones
 
-Fecha de referencia de esta especificación: **14 de noviembre de 2026**.
+Fecha de verificación: **14 de noviembre de 2026**.
 
-Las versiones de esta tabla son una línea base técnica, no una invitación a instalar versiones flotantes. Codex debe resolver las versiones patch compatibles al crear el proyecto, escribir los lockfiles y confirmar que las versiones seleccionadas funcionan juntas.
+ACI debe priorizar compatibilidad reproducible, no instalar a ciegas la versión numéricamente mayor de cada paquete. Las versiones concretas se fijan en los lockfiles tras resolver y probar el conjunto en CI.
 
-## 1. Versiones base
+## 1. Runtime y herramientas fijadas como objetivo
 
-| Capa | Tecnología | Versión de referencia | Uso |
+| Capa | Tecnología | Versión objetivo verificada | Uso |
 |---|---|---:|---|
-| Runtime científico | Python | 3.13.18 | Backend y procesamiento |
-| Gestor Python | uv | estable 0.x | Entorno y lockfile |
-| API | FastAPI | >=0.129,<1.0 | API HTTP |
-| Esquemas | Pydantic | 2.x | Validación |
-| ORM | SQLAlchemy | 2.0.x | Acceso a PostgreSQL |
-| Migraciones | Alembic | 1.x | Evolución de esquema |
-| GIS ORM | GeoAlchemy2 | 0.x/compatible | Tipos espaciales |
-| Datos | NumPy | 2.x | Arreglos numéricos |
-| Tablas | Pandas | >=2.2,<4 | Series tabulares |
-| Ciencia | SciPy | versión estable compatible | Estadística |
-| Estadística | Statsmodels | 0.14.x o posterior compatible | Modelos y pruebas |
-| Series multidimensionales | Xarray | 2026.09.x | NetCDF/Zarr |
-| Paralelismo | Dask | 2026.x | Cómputo por bloques |
-| Almacenamiento array | Zarr | 3.x | Cubos procesados |
-| CF conventions | cf-xarray | estable compatible | Metadatos CF |
-| Unidades | Pint / pint-xarray | estable compatible | Conversión explícita |
-| ML | scikit-learn | 1.9.x | Baselines y evaluación |
-| ML boosting | XGBoost | 3.x | Modelos tabulares |
-| GIS vectorial | GeoPandas | 1.x | Polígonos y recortes |
+| Runtime científico | Python | **3.13.18** | Backend y procesamiento |
+| Gestor Python | uv | Última estable compatible | Entornos y lockfile |
+| API | FastAPI | **0.162.7** | API HTTP |
+| Validación | Pydantic | **2.14.3** | Esquemas |
+| ORM | SQLAlchemy | **2.0.57** | Persistencia; línea conservadora 2.0 |
+| Migraciones | Alembic | Última estable compatible | Migraciones |
+| GIS ORM | GeoAlchemy2 | Última estable compatible con SQLAlchemy 2.0 | Tipos espaciales |
+| Arrays | NumPy | 2.x | Cómputo numérico |
+| Tablas | Pandas | >=2.2,<4 | Series temporales/tabulares |
+| Estadística | SciPy | Última estable compatible | Estadística |
+| Modelos estadísticos | Statsmodels | 0.14.x o posterior compatible | Modelos |
+| Arrays etiquetados | Xarray | **2026.9.0** | NetCDF/Zarr |
+| Paralelismo | Dask | **2026.8.0** | Cómputo por bloques |
+| Almacenamiento de arrays | Zarr | 3.x | Cubos procesados |
+| Metadatos CF | cf-xarray | Última estable compatible | Convenciones CF |
+| Unidades | Pint / pint-xarray | Última estable compatible | Conversión explícita |
+| ML | scikit-learn | **1.9.1** | Baselines y evaluación |
+| Boosting | XGBoost | **3.4.2** | ML tabular |
+| GIS vectorial | GeoPandas | 1.x | Geometrías/recortes |
 | Geometría | Shapely | 2.x | Operaciones geométricas |
 | Proyecciones | PyProj | 3.x | CRS |
-| Raster | Rasterio / rioxarray | líneas estables compatibles | GeoTIFF y raster |
-| Runtime web | Node.js | 26.x LTS | Toolchain web |
-| UI | React | 19.3 | Interfaz |
-| Lenguaje UI | TypeScript | 5.9.x | Tipado |
-| Bundler | Vite | 8.3.x | Desarrollo/build |
-| Mapa | MapLibre GL JS | 6.18.x | Cartografía web |
-| Gráficas | Plotly.js | 3.x o versión estable compatible | Series y gráficos |
-| Base de datos | PostgreSQL | 18.7 | Metadatos/resultados |
-| GIS en DB | PostGIS | 3.7.0 | Geometrías e índices espaciales |
-| Entorno | Docker Compose | V2 | Desarrollo local |
-| Calidad Python | Ruff | estable | Lint y formato |
-| Tests Python | pytest | 9.x | Pruebas |
-| Calidad UI | ESLint + Prettier | estables | Lint/formato |
-| Tests UI | Vitest + Testing Library | estables compatibles | Pruebas de componentes |
+| Raster | Rasterio / rioxarray | Última estable compatible | Raster y COG |
+| Runtime web | Node.js | **26 LTS** | Toolchain web |
+| UI | React / React DOM | **19.3** | Interfaz |
+| Lenguaje UI | TypeScript | **6.0.x** | Tipado |
+| Bundler | Vite | **8.3.8** | Desarrollo/build |
+| Mapa | MapLibre GL JS | **6.18.0** | Cartografía web |
+| Gráficas | Plotly.js | Última estable compatible | Series y gráficos |
+| Base de datos | PostgreSQL | **18.7** | Metadatos/resultados |
+| GIS en DB | PostGIS | **3.7.0** | Geometrías e índices espaciales |
+| Contenedores | Docker Compose | V2 | Desarrollo local |
+| Calidad Python | Ruff | Última estable | Lint/format |
+| Tests Python | pytest | **9.2.0** | Pruebas |
+| Calidad UI | ESLint + Prettier | Últimas estables compatibles | Lint/format |
+| Tests UI | Vitest + Testing Library | Últimas estables compatibles | Pruebas UI |
 
-## 2. Compatibilidad y selección
+### Por qué Python 3.13.18 y no 3.14/3.15
+Python 3.14.10 es una rama de funcionalidad más nueva, pero 3.13.18 ofrece una base conservadora para validar el ecosistema nativo científico/GIS (NetCDF, HDF, Rasterio, GDAL, PyProj, SciPy). Xarray 2026.9.0 ya requiere Python 3.12 o superior. La elección de 3.13 es deliberada para facilitar ruedas binarias y compatibilidad; revisar en Fase 0 si todos los paquetes existentes ya soportan esta versión.
 
-### Python 3.13
-Se elige Python 3.13.x para priorizar la compatibilidad de las dependencias científicas, NetCDF y GIS. Aunque existen ramas más nuevas de Python, no se debe migrar a una rama reciente hasta comprobar que Xarray, SciPy, Rasterio, netCDF4, PyProj y los paquetes de acceso a datos tienen wheels y tests correctos.
+Node 26 está en LTS; no usar Node 27 Alpha para el entorno del proyecto.
 
-La versión patch exacta se debe fijar en `.python-version` y en la imagen Docker.
+### SQLAlchemy: mantener 2.0 en el primer corte
+SQLAlchemy 2.1.8 es la versión actual, pero ACI fijará inicialmente la rama de mantenimiento 2.0.57 para reducir riesgos durante la integración de GeoAlchemy2 y Alembic. Antes de migrar a 2.1 se deben pasar tests de geometrías, transacciones y migraciones.
 
-### Node 26 LTS
-Usar una rama LTS, no Current/Alpha. Fijar la versión mayor en `.nvmrc` y en CI. Guardar `package-lock.json`.
+## 2. Resolución de dependencias
 
-### PostgreSQL 18 + PostGIS 3.7
-Usar la imagen oficial compatible de PostGIS para PostgreSQL 18. No usar PostgreSQL 19 RC en el MVP. Fijar tag concreto y, para despliegues reproducibles, digest de imagen.
+Las versiones anteriores son los objetivos comprobados al redactar esta especificación. Codex debe:
+1. comprobar la compatibilidad de todos los paquetes con Python 3.13 y entre sí;
+2. probar la imagen Docker de PostgreSQL/PostGIS;
+3. resolver versiones exactas;
+4. generar y versionar `uv.lock` y `package-lock.json`;
+5. registrar cualquier desviación en `DECISIONS.md`.
 
-### FastAPI y SQLAlchemy
-FastAPI se fija en un rango compatible dentro de 0.x y el lockfile determina la versión exacta. Usar SQLAlchemy 2.0.x en la primera versión para minimizar riesgos con GeoAlchemy2; no saltar a 2.1 sin probar migraciones, consultas geográficas y tests.
-
-## 3. Gestión de dependencias
+No usar etiquetas `latest` en producción ni intervalos abiertos sin lockfile.
 
 ### Python
-- Un solo `pyproject.toml` raíz al comienzo.
+- Un solo `pyproject.toml` raíz inicialmente.
 - `uv.lock` obligatorio y versionado.
 - Separar grupos: `api`, `science`, `ml`, `dev`.
-- Evitar dependencias opcionales pesadas hasta necesitarlas.
-- Documentar cualquier dependencia con binarios nativos.
-- No usar `pip install -U` en CI.
+- Mantener paquetes con binarios nativos en un grupo de instalación controlado.
+- No actualizar dependencias silenciosamente.
 
 ### JavaScript
 - `package.json` y `package-lock.json` versionados.
-- Usar `npm ci` para CI y despliegues.
-- No instalar librerías de mapas duplicadas. MapLibre será el único motor de mapa inicial.
+- Usar `npm ci` en CI y despliegues.
 - React y React DOM deben compartir la misma versión.
+- MapLibre será el único motor de mapa inicial; no instalar motores cartográficos redundantes.
 
-## 4. Dependencias por componente
+## 3. Dependencias por componente
 
 ### API
-`fastapi[standard]`, `pydantic`, `sqlalchemy`, `alembic`, `geoalchemy2`, `psycopg`, `orjson` opcional.
+`fastapi`, `pydantic`, `sqlalchemy`, `alembic`, `geoalchemy2`, `psycopg`.
 
 ### Ciencia y datos
-`numpy`, `pandas`, `scipy`, `statsmodels`, `xarray`, `dask[array]`, `zarr`, `netCDF4`, `h5netcdf`, `cf-xarray`, `pint`, `pint-xarray`, `earthaccess`, `cdsapi` solo si se requiere acceso programático a Copernicus.
+`numpy`, `pandas`, `scipy`, `statsmodels`, `xarray`, `dask[array]`, `zarr`, `netCDF4`, `h5netcdf`, `cf-xarray`, `pint`, `pint-xarray`, `earthaccess`. Añadir `cdsapi` solo cuando se implemente el adaptador ERA5.
 
 ### GIS
-`geopandas`, `shapely`, `pyproj`, `rasterio`, `rioxarray`, `pyogrio`, `rio-tiler` cuando se implemente servicio de teselas.
+`geopandas`, `shapely`, `pyproj`, `rasterio`, `rioxarray`, `pyogrio`. Añadir `rio-tiler` solo cuando se implemente el servicio de teselas.
 
 ### ML
-`scikit-learn`, `xgboost`. SHAP es opcional y no debe incorporarse hasta que se necesiten explicaciones de modelos.
+`scikit-learn`, `xgboost`. SHAP y frameworks de deep learning son opcionales y no deben entrar hasta que exista una necesidad demostrada.
 
-### Tests / calidad
-`pytest`, `pytest-cov`, `hypothesis` opcional, `ruff`, `mypy` opcional.
+### Calidad
+`pytest`, `pytest-cov`, `hypothesis` opcional, `ruff`. Mypy puede añadirse cuando los límites entre paquetes estén definidos.
 
-## 5. Infraestructura mínima
+## 4. Infraestructura mínima
 
-Docker Compose debe poder levantar:
+Docker Compose debe levantar:
 - `db`: PostgreSQL 18 + PostGIS 3.7.
 - `api`: FastAPI.
 - `web`: React/Vite en modo desarrollo.
-- `worker`: mismo código Python, comandos de ingestión/análisis.
+- `worker`: mismo paquete Python para ingestión y análisis.
 - `minio`: perfil opcional para almacenamiento S3 local.
 
-No instalar Redis, Kafka, Kubernetes, Airflow ni un sistema de colas distribuido en el MVP. Para procesos largos se usarán comandos CLI reanudables; se evaluará un worker/cola dedicada solo cuando el producto lo requiera.
+No introducir Redis, Kafka, Kubernetes ni Airflow en el MVP. Los procesos largos deben ejecutarse mediante comandos CLI idempotentes y reanudables; evaluar una cola de trabajos cuando exista una necesidad operativa concreta.
 
-## 6. Política de actualizaciones
-- Dependabot o revisión mensual para parches.
+## 5. Política de actualización
+- Revisar parches de seguridad mensualmente.
 - Actualizar una familia de dependencias por PR.
-- Ejecutar tests completos y comparar resultados científicos antes de actualizar.
-- No aceptar actualizaciones mayores automáticas.
-- Registrar decisiones de cambios en `docs/aci/DECISIONS.md`.
+- Ejecutar la suite completa antes y después.
+- No aceptar actualizaciones mayores automáticamente.
+- Registrar cambios de versiones y decisiones de compatibilidad en `docs/aci/DECISIONS.md`.
+
+## 6. Referencias oficiales de versiones
+
+- [Python 3.13.18](https://www.python.org/downloads/release/python-31318/)
+- [Node.js Release Schedule](https://nodejs.org/en/about/previous-releases/)
+- [FastAPI Release Notes](https://fastapi.tiangolo.com/release-notes/)
+- [Pydantic Releases](https://github.com/pydantic/pydantic/releases)
+- [SQLAlchemy releases](https://www.sqlalchemy.org/download.html)
+- [Xarray What’s New](https://docs.xarray.dev/en/stable/whats-new.html)
+- [Dask releases](https://github.com/dask/dask/releases)
+- [scikit-learn releases](https://github.com/scikit-learn/scikit-learn/releases)
+- [XGBoost releases](https://github.com/dmlc/xgboost/releases)
+- [React 19.3](https://react.dev/blog/2026/09/09/react-19-3)
+- [TypeScript releases](https://github.com/microsoft/TypeScript/releases)
+- [Vite releases](https://github.com/vitejs/vite/releases)
+- [MapLibre GL JS releases](https://github.com/maplibre/maplibre-gl-js/releases)
+- [PostgreSQL 18.7](https://www.postgresql.org/docs/release/18.7/)
+- [PostGIS 3.7.0](https://postgis.net/2026/10/PostGIS-3.7.0/)
+- [pytest releases](https://github.com/pytest-dev/pytest/releases)
