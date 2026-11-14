@@ -22,7 +22,7 @@ Un globo 3D donde cualquier persona elige un lugar o dibuja un área del planeta
 | [`app/`](app/) | App Streamlit de análisis (respaldo) | Python |
 | [`tests/`](tests/) | Validación con datos sintéticos | Python |
 | [`docs/`](docs/) | Documentos 01–06, referencia y diagramas | Markdown |
-| `data/` | `processed/` y `grids/` en git; `global/` se regenera (≈ 1,3 GB) | — |
+| `data/` | `processed/`, `grids/` y `sample/` (muestra global 2°) en git; `global/` se regenera (≈ 1,9 GB) | — |
 
 **¿Por dónde empiezo?**
 1. Lee [docs/README.md](docs/README.md), el mapa de documentos.
@@ -41,9 +41,11 @@ npm --prefix web install
 python export/build_site_data.py          # capas de la Amazonía (los datos ya están en git)
 npm --prefix web run dev                  # http://localhost:3000
 
-# API de análisis de áreas (necesita los datos globales, ver abajo)
+# API de análisis de áreas: sin datos globales usa la muestra de 2° que está en el repo
 uvicorn api.main:app --port 8000          # http://localhost:8000/docs
 ```
+
+**¿Solo vas a trabajar en el backend?** Instala `requirements-backend.txt` (liviano) y no descargues nada. Ver [CONTRIBUTING.md §3](CONTRIBUTING.md).
 
 ### Datos NASA
 Requiere una cuenta [Earthdata Login](https://urs.earthdata.nasa.gov) con las aplicaciones **"NASA GESDISC DATA ARCHIVE"** y **"LP DAAC Data Pool"** aprobadas (sin eso la descarga da error 401), y un `~/.netrc` con el usuario y la contraseña.

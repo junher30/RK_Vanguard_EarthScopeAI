@@ -1,5 +1,7 @@
 """EarthScope AI analysis API (FastAPI).
 
+Data: full global grids when present, otherwise the 2° sample in git (EARTHSCOPE_DATA=auto|full|sample).
+
 Thin layer over science/: the web sends an area (GeoJSON polygon or point) and a variable,
 and gets back the area's monthly series, trend, robustness and caveats computed by the
 same engine as the case study. No science lives here.
@@ -23,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from export.build_site_data import clean  # noqa: E402
-from science.area import analyze_area, get_cube  # noqa: E402
+from science.area import analyze_area, data_mode, get_grid  # noqa: E402
 from science.variables import GLOBAL_VARIABLES  # noqa: E402
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -61,11 +63,14 @@ def _cached(var: str, geometry_json: str, point_json: str, alpha: float) -> dict
 @app.get("/api/v1/health")
 def health():
     out = {}
-    for k, v in GLOBAL_VARIABLES.items():
-        files = sorted((ROOT / "data" / "global" / v["product"]).glob("*.npz"))
-        out[k] = {"months": len(files), "first": files[0].stem if files else None,
-                  "last": files[-1].stem if files else None}
-    return {"status": "ok", "grid": "0.5° global", "variables": out}
+    for k in GLOBAL_VARIABLES:
+        try:
+            g = get_grid(k)
+            out[k] = {"source": g.source, "grid": g.label, "months": len(g.months),
+                      "first": g.months[0], "last": g.months[-1]}
+        except FileNotFoundError as exc:
+            out[k] = {"source": None, "error": str(exc)}
+    return {"status": "ok", "data_mode": data_mode(), "variables": out}
 
 
 @app.get("/api/v1/variables")
@@ -95,6 +100,6 @@ def warm():
     """Build/open the memory-mapped cubes so the first request is fast."""
     for k in GLOBAL_VARIABLES:
         try:
-            get_cube(k)
+            get_grid(k)
         except FileNotFoundError:
             pass

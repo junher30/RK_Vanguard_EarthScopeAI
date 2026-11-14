@@ -40,7 +40,7 @@ flowchart LR
 | Capa | Carpeta | Tecnología | Responsabilidad |
 |---|---|---|---|
 | Ingesta | `pipeline/` | Python, earthaccess, h5py, pyhdf | Descargar mes a mes, control de calidad, re-grillar y borrar el archivo crudo; se puede reanudar |
-| Datos | `data/` | `.npz`, CSV | Grillas mensuales (Amazonía 0,1° en git; global 0,5° fuera de git) |
+| Datos | `data/` | `.npz`, CSV | Grillas mensuales: Amazonía 0,1° (en git), global 0,5° (fuera de git) y **muestra global 2°** (`data/sample/`, en git, para desarrollo) |
 | Ciencia | `science/` | NumPy, pandas, SciPy | Tendencias (Mann-Kendall estacional, Sen, OLS AR(1)), What-If, tendencias por celda, análisis de área |
 | Exportación | `export/` | Python, Pillow | Generar PNG coloreados y JSON (series, tendencia, manifiesto) para la web |
 | API | `api/` | FastAPI, Uvicorn | Análisis de cualquier polígono o punto bajo demanda |
@@ -83,6 +83,8 @@ web/
 | POST | `/api/v1/area/analyze` | `{variable, geometry?: GeoJSON Polygon, point?: {lat,lng}, alpha?}` | Serie, tendencia, robustez y advertencias, o `{ok:false, reason}` |
 
 Documentación interactiva en `http://localhost:8000/docs`. CORS abierto (datos públicos, sin credenciales).
+
+**Datos que usa** (`EARTHSCOPE_DATA`): `full` (0,5°, `data/global/`), `sample` (2°, `data/sample/`, en git) o `auto` (completo si existe; si no, la muestra). Cada respuesta indica `area.source` y `area.grid`.
 
 ## 6. Flujo de datos de una consulta de área
 

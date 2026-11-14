@@ -38,8 +38,9 @@ Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2
 ### C. Ciencia y datos (P1)
 | # | Tarea | Responsable | Rama | Estado |
 |---|---|---|---|---|
-| C1 | Prueba automática de `science/area.py` (polígono, antimeridiano, punto, océano) | | `feat/science-test-area` | ⏳ |
-| C2 | Pruebas de la API con `fastapi.testclient` | | `feat/api-tests` | ⏳ |
+| C1 | Prueba automática de `science/area.py` (polígono, antimeridiano, punto, océano) | | `feat/science-test-area` | ✅ |
+| C2 | Pruebas de la API con `fastapi.testclient` | | `feat/api-tests` | ✅ |
+| C6 | Activar la protección de `main` en GitHub ([CONTRIBUTING §4](../CONTRIBUTING.md)) | dueño del repo | — | ⏳ |
 | C3 | Exportar valores por celda cuantizados para B1 | | `feat/export-valores-celda` | ⏳ |
 | C4 | Generalizar el What-If a cualquier área con validación fuera de muestra | | `feat/science-whatif-global` | ⏳ P2 |
 | C5 | Exportar mapas **mensuales** globales (RF-11) | | `feat/export-mensual` | ⏳ P2 |
@@ -53,6 +54,6 @@ Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2
 | D4 | Agregar a la declaración de IA cualquier otra herramienta usada (ChatGPT, etc.) | | ⏳ |
 
 ## Orden sugerido
-1. **Hoy:** A1 + A2 (que exista el enlace), B1, C1.
+1. **Hoy:** C6 (proteger `main`), A1 + A2 (que exista el enlace), B1.
 2. **Domingo por la mañana:** A3, B2, B3, B4.
 3. **Domingo por la tarde:** A4, A5 → A6 con margen (antes de las 9 p. m.).
