@@ -1,53 +1,40 @@
-# Decisiones de arquitectura (ADR)
-
-Este documento registra decisiones y razones. Cambiar una decisión requiere actualizar este archivo y explicar impacto/migración.
+# Decisiones de arquitectura (ADR) — LACI
 
 ## ADR-001 — Evolucionar el repositorio existente
-**Estado:** aceptada.
+**Estado:** aceptada. Mantener y auditar el prototipo EarthScope AI/Streamlit antes de migración. No borrar ni reemplazar durante la transición.
 
-El repositorio contiene un prototipo EarthScope AI con ingestión NASA, análisis estadístico y visualizaciones. Se aprovechará el trabajo validado, pero no se asume que su región o diseño actual cubren el alcance final. No borrar ni reemplazar el prototipo durante la migración.
+## ADR-002 — Monorepo modular
+**Estado:** aceptada. Una API, web y paquete científico compartido. No microservicios prematuros.
 
-## ADR-002 — Monorepo modular antes que microservicios
-**Estado:** aceptada.
+## ADR-003 — Python para núcleo científico
+**Estado:** aceptada. Xarray/Dask/NumPy/SciPy/GeoPandas y librerías estadísticas/ML.
 
-Una API, una aplicación web y un paquete científico compartido permiten separación sin complejidad de red y despliegue. No introducir Kafka/Kubernetes/servicios independientes hasta que exista una necesidad medida.
+## ADR-004 — React + MapLibre
+**Estado:** aceptada. Streamlit permanece como prototipo hasta paridad validada.
 
-## ADR-003 — Python para el núcleo científico
-**Estado:** aceptada.
+## ADR-005 — PostgreSQL/PostGIS + Zarr/NetCDF
+**Estado:** aceptada. DB para catálogos, geometrías, metadatos, jobs y resultados resumidos; cubos científicos en object storage/archivos.
 
-Xarray, Dask, NumPy, SciPy, GeoPandas y scikit-learn cubren la manipulación de cubos, GIS y análisis. FastAPI expone los resultados a la UI.
+## ADR-006 — Cobertura de producto latinoamericana y caribeña
+**Estado:** aceptada por decisión del usuario. LACI se diseña para América Latina y el Caribe. El catálogo y API son continentales; ingesta, validación y disponibilidad real se incorporan progresivamente. No afirmar cobertura de datos/modelos completa por el mero hecho de que exista un catálogo.
 
-## ADR-004 — React + MapLibre para el frontend objetivo
-**Estado:** aceptada.
+## ADR-007 — Modelos regionales especializados
+**Estado:** aceptada por decisión del usuario. Cada modelo se asocia a un dominio regional, dataset, targets, horizontes y métricas. Compartir código y pipelines no equivale a compartir pesos ni generalización. Transfer learning se considera experimento y requiere validación específica. Una región sin evidencia suficiente no tiene predicción LACI publicada.
 
-React ofrece componentes y estado; MapLibre presenta mapas vectoriales/raster sin acoplar el producto a un servicio cartográfico comercial. Streamlit se conserva como prototipo mientras se construye la nueva interfaz.
+## ADR-008 — Prioridad científica equilibrada
+**Estado:** aceptada por decisión del usuario. Temperatura/calor y presión/circulación tienen prioridad equivalente en producto, arquitectura y roadmap. Mantener variables distintas y trazables.
 
-## ADR-005 — PostgreSQL/PostGIS para metadatos y geometrías; Zarr/NetCDF para cubos
-**Estado:** aceptada.
+## ADR-009 — Reanálisis no es pronóstico
+**Estado:** aceptada. MERRA-2/ERA5 reconstruyen histórico; GFS es baseline de pronóstico. Modelo propio requiere hindcasts compatibles y evaluación temporal/espacial independiente.
 
-Los arrays climáticos son multidimensionales y no deben descomponerse en millones de filas SQL. La DB guarda catálogos, geometrías, jobs, resúmenes, resultados y referencias a archivos.
+## ADR-010 — PS y MSLP separadas
+**Estado:** aceptada. Presión superficial y presión reducida al nivel del mar no son intercambiables; especial cuidado en Andes/altas elevaciones.
 
-## ADR-006 — Dos delimitaciones geográficas
-**Estado:** aceptada.
+## ADR-011 — Resolución nativa preservada
+**Estado:** aceptada. Regrillar solo para comparación, con método documentado; no implica nueva información.
 
-Cuenca hidrográfica y bioma amazónico no son el mismo objeto. Se usan máscaras distintas y se generan intersecciones por país. No se utiliza una caja rectangular como límite científico.
+## ADR-012 — LACI no es un servicio oficial de alertas
+**Estado:** aceptada. Resultados científicos y experimentales, sin sustituir servicios meteorológicos nacionales.
 
-## ADR-007 — Reanálisis no es pronóstico
-**Estado:** aceptada.
-
-MERRA-2 y ERA5 se usan para reconstrucción histórica y tendencias. GFS es el baseline de pronóstico futuro. Un modelo ACI propio requiere entrenamiento con datos compatibles y validación temporal; no se puede inferir que un buen ajuste sobre reanálisis implica habilidad de pronóstico.
-
-## ADR-008 — Presión superficial y presión a nivel del mar separadas
-**Estado:** aceptada.
-
-Se conservan como variables distintas, con metadatos/unidades propias. La reducción de presión a nivel del mar puede ser problemática en elevaciones altas y no sustituye a la presión superficial.
-
-## ADR-009 — Resolución nativa preservada
-**Estado:** aceptada.
-
-Los datos se almacenan a su resolución de origen. Regrillar es una operación documentada para comparación y no añade información. La resolución de salida nunca debe insinuar mayor detalle del que la fuente contiene.
-
-## ADR-010 — ACI no es un servicio oficial de alertas
-**Estado:** aceptada.
-
-ACI presenta resultados de investigación y estimaciones experimentales. No se presenta como autoridad meteorológica ni como alerta oficial para comunidades.
+## ADR-013 — Regiones analíticas no son divisiones administrativas
+**Estado:** aceptada. Regiones climáticas pueden solaparse y deben tener geometría, fuente, versión y justificación propias.
