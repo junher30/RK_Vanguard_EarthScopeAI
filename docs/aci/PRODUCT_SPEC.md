@@ -1,140 +1,88 @@
-# Especificación del producto — ACI
+# Especificación del producto — LACI
 
 ## 1. Visión
+Construir **LatAm Climate Intelligence (LACI)**, una plataforma de investigación y análisis climático para América Latina y el Caribe. Debe ayudar a identificar qué está cambiando, dónde ocurre, la robustez de la evidencia y cómo podrían evolucionar en el corto plazo los patrones térmicos y de presión atmosférica.
 
-Construir **Amazon Climate Intelligence (ACI)**, una plataforma de investigación climática que permita descubrir qué está cambiando en la Amazonía, dónde ocurre, cuánto cambia, qué tan robusta es la evidencia estadística y cómo podrían evolucionar ciertos patrones atmosféricos en el corto plazo.
+LACI no sustituye a servicios meteorológicos nacionales ni emite alertas oficiales.
 
-ACI no pretende sustituir a los servicios meteorológicos nacionales ni emitir alertas oficiales. Es una herramienta científica de análisis y apoyo a la investigación.
-
-## 2. Problema que aborda
-
-La información atmosférica y satelital de la Amazonía procede de múltiples misiones, reanálisis y modelos. Las variables tienen distintas resoluciones espaciales y temporales, unidades, periodos y convenciones. Esto dificulta comparar territorios, estudiar tendencias y presentar predicciones con trazabilidad.
-
-ACI centralizará el flujo de trabajo: catálogo de datos, normalización, geografía, análisis de tendencias, detección de eventos, pronósticos de referencia y visualización.
+## 2. Decisiones de alcance
+- **Cobertura geográfica:** toda América Latina y el Caribe desde el diseño del producto.
+- **Entrega:** progresiva por regiones; el catálogo geográfico y los contratos son continentales, pero la cobertura real se declara por dataset, variable, periodo y región.
+- **Arquitectura IA:** modelos regionales especializados con pipelines, artefactos y evaluación independientes.
+- **Prioridad científica:** equilibrio entre temperatura/eventos de calor y presión/circulación atmosférica.
+- **Primer piloto recomendado:** Amazonia, sin convertirla en límite arquitectónico.
 
 ## 3. Objetivos
+- Analizar temperatura del aire a 2 m, LST, presión superficial, presión a nivel del mar, viento, humedad y precipitación cuando las fuentes lo permitan.
+- Detectar anomalías térmicas, episodios de calor y anomalías/cambios de presión.
+- Calcular tendencias por celda, región y país con significancia, incertidumbre y cobertura.
+- Caracterizar patrones espaciales de presión y circulación.
+- Mostrar pronósticos numéricos con inicialización, tiempo válido, horizonte y fuente.
+- Entrenar y evaluar modelos propios por región únicamente si existen datos compatibles y habilidad demostrada.
+- Comparar regiones y comunicar vacíos de observación/datos.
 
-### Objetivos principales
-- Analizar tendencias de temperatura del aire, temperatura superficial, presión superficial, presión a nivel del mar, viento, humedad y precipitación.
-- Identificar anomalías térmicas y de presión respecto de climatologías de referencia.
-- Determinar la magnitud y significancia estadística de las tendencias por celda, región y país.
-- Analizar configuraciones espaciales de presión y circulación atmosférica.
-- Mostrar pronósticos de presión y variables relacionadas para horizontes de corto plazo, con fuente, tiempo de inicialización, tiempo válido e incertidumbre.
-- Evaluar la capacidad de modelos propios para anticipar anomalías de presión y condiciones de calor extremo.
+## 4. Usuarios
+Investigadores, docentes, estudiantes, analistas ambientales, instituciones de gestión de riesgo y público interesado en interpretar datos climáticos.
 
-### Objetivos secundarios
-- Comparar la cuenca hidrográfica con el bioma amazónico dividido por país.
-- Relacionar anomalías de presión, temperatura, viento, humedad, precipitación y condiciones terrestres.
-- Facilitar exportación de gráficas, resultados tabulares y metadatos de fuentes.
+## 5. Regiones y jerarquía geográfica
+El catálogo debe soportar:
+- países y territorios;
+- subregiones administrativas;
+- regiones climáticas/analíticas (no necesariamente contiguas ni mutuamente excluyentes);
+- cuencas hidrográficas y biomas;
+- celdas de grilla.
 
-## 4. Usuarios principales
-- Estudiantes e investigadores que exploran cambios ambientales.
-- Docentes y participantes del NASA Space Apps Challenge.
-- Analistas ambientales y organizaciones interesadas en el comportamiento climático amazónico.
-- Público general que necesita interpretar visualizaciones científicas sin manipular directamente archivos de reanálisis.
+Regiones iniciales candidatas (límites exactos pendientes de selección y validación): México, Centroamérica, Caribe, Andes del Norte, Andes Centrales, Amazonia, Nordeste de Brasil, Brasil tropical/central, vertiente Pacífica sudamericana y Cono Sur. Se podrán subdividir o agrupar según homogeneidad climática, datos y evaluación. No asumir que esta lista es una clasificación oficial universal.
 
-## 5. Funcionalidades
-
-### F-01. Explorador geográfico
-- Mostrar el polígono de la cuenca amazónica.
-- Mostrar el bioma amazónico y sus intersecciones con países.
-- Permitir elegir una máscara geográfica y un nivel de agregación.
-- Mostrar temperatura, presión, viento, humedad, precipitación y anomalías.
-- Mostrar la fuente, resolución, unidad, periodo y hora de validez de la capa.
+## 6. Funcionalidades
+### F-01. Explorador continental
+Mapa con países/territorios, regiones analíticas, cuencas y biomas. Permitir filtros por región, país, variable, fuente, periodo y tipo de dato. La capa debe informar resolución nativa, unidad y disponibilidad real.
 
 ### F-02. Explorador temporal
-- Consultar series temporales por variable, ubicación, país, subregión o celda.
-- Comparar fuentes sin mezclarlas silenciosamente.
-- Permitir agregaciones horarias, diarias, mensuales y anuales cuando la fuente lo permita.
-- Señalar periodos faltantes y calidad de cobertura.
+Series por variable y región; frecuencia compatible con fuente; cobertura faltante visible; comparación de fuentes sin mezclarlas silenciosamente.
 
 ### F-03. Laboratorio de tendencias
-- Calcular anomalías respecto de una climatología seleccionable.
-- Calcular tendencia, pendiente de Sen, pruebas de Mann-Kendall adecuadas a la estacionalidad y autocorrelación, valor p e intervalo de confianza.
-- Corregir pruebas múltiples al generar mapas de miles de celdas.
-- Mostrar la cobertura temporal y el número de observaciones válidas.
-- Diferenciar tendencias estadísticamente significativas de cambios visuales no significativos.
+Climatologías, anomalías, pendiente de Sen, Mann-Kendall/Seasonal Mann-Kendall, tratamiento de autocorrelación, intervalos y corrección FDR. Mostrar periodo, método, cobertura y número de observaciones.
 
-### F-04. Detección de eventos
-- Detectar episodios de presión anómala y cambios rápidos de presión.
-- Caracterizar gradientes espaciales y evolución temporal.
-- Detectar episodios de calor con una definición local y explícita.
-- Agrupar celdas conectadas y seguir la evolución del evento.
-- Conservar evidencia, umbrales y versión de algoritmo.
+### F-04. Eventos de calor y presión
+Detectar episodios de calor con definición local explícita y anomalías de presión/cambios rápidos/gradientes. Agrupar celdas y seguir eventos, conservando algoritmo, parámetros y procedencia.
 
-### F-05. Centro predictivo
-- Mostrar el pronóstico numérico GFS como referencia operativa.
-- Mostrar presión superficial y presión a nivel del mar por separado.
-- Mostrar campos de viento y anomalías esperadas.
-- Mostrar horizonte, inicialización, tiempo válido, fuente y antigüedad del pronóstico.
-- Permitir visualizar predicciones propias de ACI únicamente cuando hayan superado validación fuera de muestra.
-- Mostrar incertidumbre y métricas de habilidad del modelo.
+### F-05. Centro de pronóstico
+GFS como baseline numérico inicial. Mostrar PS y MSLP por separado, campos de temperatura/viento disponibles, ciclo, valid_time, lead_time, resolución y antigüedad. Predicciones propias solo si superan validación independiente regional.
 
-### F-06. Comparador geográfico
-- Comparar cuenca completa, subregiones y porciones del bioma por país.
-- Permitir gráficos de series y mapas con una escala común cuando la comparación física sea válida.
-- Advertir cuando las resoluciones o definiciones de variable no sean comparables.
+### F-06. Modelos regionales
+Registro por modelo: región/dominio, variables, target, horizonte, fuentes, periodo de entrenamiento, versión de datos/features, métricas por horizonte y baseline, incertidumbre y estado (experimental/validado/degradado). Una región sin modelo validado no hereda automáticamente el modelo de otra.
 
-### F-07. Trazabilidad
-Cada capa, cálculo, evento y predicción debe permitir consultar:
-- fuente y producto;
-- fecha/versión de descarga;
-- periodo y resolución;
-- variable original y variable normalizada;
-- unidad original y unidad mostrada;
-- método, parámetros y versión de código/modelo;
-- limitaciones y nivel de calidad.
+### F-07. Comparador regional
+Comparar tendencias y eventos entre regiones, mostrando diferencias de resolución, climatología, disponibilidad y calidad. Evitar escalas visuales que induzcan comparaciones físicas inválidas.
 
-## 6. No objetivos de la primera versión
-- Predicción climática de décadas o escenarios de cambio climático.
-- Atribución causal de tendencias a deforestación, ENSO u otras causas.
-- Sustituir pronósticos o alertas de servicios meteorológicos oficiales.
-- Predicción operativa de incendios forestales.
-- Asimilación de estaciones meteorológicas propias en tiempo real.
-- Plataforma de microservicios distribuida, Kubernetes, Kafka o Airflow.
-- Acceso público con autenticación multiusuario compleja.
+### F-08. Trazabilidad
+Cada capa/cálculo/evento/predicción conserva fuente, producto, versión, unidad, periodo, resolución, método, parámetros, versión de código/modelo y limitaciones.
 
-## 7. Definiciones científicas y de producto
+## 7. Tipos de datos
+`observation`, `reanalysis`, `forecast`, `laci_prediction`, `scenario`. Nunca indistinguibles en API o UI.
 
-### Tipos de datos
-- `observation`: medición observacional o producto de observación satelital.
-- `reanalysis`: reconstrucción histórica que combina modelo y observaciones.
-- `forecast`: salida de un modelo numérico inicializado en un momento determinado.
-- `aci_prediction`: estimación del modelo estadístico/ML de ACI.
-- `scenario`: experimento hipotético; no es pronóstico.
-
-Estos tipos nunca deben ser indistinguibles en la interfaz o base de datos.
-
-### Variables
+## 8. Variables normalizadas
 - `tas2m`: temperatura del aire a 2 m.
-- `tasmax2m`: máxima diaria de temperatura del aire a 2 m, derivada de datos horarios.
+- `tasmax2m`: máxima diaria de temperatura del aire a 2 m.
 - `ts`: temperatura superficial terrestre (LST).
-- `ps`: presión atmosférica en superficie.
+- `ps`: presión superficial.
 - `msl`: presión reducida al nivel del mar.
-- `u10`, `v10`: componentes zonal y meridional del viento a 10 m.
-- `u850`, `v850`: componentes del viento a 850 hPa cuando estén disponibles.
-- `q2m`: humedad específica a 2 m, si está disponible.
-- `rh2m`: humedad relativa a 2 m, si está disponible.
-- `pr`: precipitación acumulada o tasa, con intervalo claramente especificado.
+- `u10`, `v10`: viento a 10 m.
+- `u850`, `v850`: viento a 850 hPa, si está disponible.
+- `q2m`, `rh2m`: humedad, si está disponible.
+- `pr`: precipitación con intervalo explícito.
 
-Mantener la correspondencia entre nombres normalizados y variables originales de cada producto.
+## 9. No objetivos del MVP
+No se promete pronóstico climático decadal, atribución causal, alertas oficiales, predicción de incendios, asimilación propia en tiempo real ni despliegue de modelos profundos continentales sin evidencia. No se exige que todas las regiones estén operativas en el primer MVP.
 
-## 8. Criterios de aceptación del MVP
-1. El usuario puede seleccionar la máscara de cuenca o la máscara de bioma por país.
-2. El sistema puede consultar al menos una serie histórica MERRA-2 de temperatura y una de presión, documentando la resolución original.
-3. El sistema puede calcular y visualizar tendencias con pruebas estadísticas y cobertura válida.
-4. Las salidas distinguen presión superficial de presión a nivel del mar.
-5. El sistema puede mostrar un pronóstico GFS con inicialización y tiempo válido; no simula datos reales cuando la descarga no está disponible.
-6. El sistema distingue datos reales de fixtures sintéticos de desarrollo.
-7. El prototipo Streamlit existente sigue ejecutándose durante la transición.
-8. La ejecución local está documentada y se inicia con Docker Compose.
-9. Hay pruebas automatizadas para conversiones, series, geometría y métodos estadísticos.
-10. La interfaz nunca presenta una salida ACI como pronóstico validado si no se han calculado y publicado sus métricas fuera de muestra.
-
-## 9. Principios de diseño
-- Primero evidencia y trazabilidad; después visualización.
-- La resolución nativa es parte de la información.
-- No extrapolar detalle espacial.
-- Comparación solo entre variables físicamente equivalentes.
-- Toda predicción lleva incertidumbre, horizonte y baseline.
-- Arquitectura modular, no microservicios prematuros.
+## 10. Criterios de aceptación del MVP
+1. Catálogo geográfico con cobertura prevista para Latinoamérica y Caribe, con geometrías y fuentes trazables.
+2. API puede devolver disponibilidad por región/variable/fuente/periodo, incluso si es “no disponible”.
+3. Al menos un piloto regional procesado de extremo a extremo con temperatura y presión.
+4. Tendencias y eventos tienen tests científicos y cobertura explícita.
+5. GFS se presenta con ciclo y tiempo válido cuando esté disponible.
+6. Cada modelo predictivo está asociado a una región y métricas independientes.
+7. La UI distingue observación, reanálisis, GFS y predicción experimental LACI.
+8. El prototipo Streamlit existente sigue ejecutándose.
+9. Instalación local reproducible y documentación de limitaciones.
