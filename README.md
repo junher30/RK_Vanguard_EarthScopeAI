@@ -66,6 +66,7 @@ npm --prefix web run dev
 | `.github/` | CI de la web, plantillas de PR y de issues (incluye "Historia de usuario") |
 
 **¿Por dónde empiezo?**
+0. 👉 **[docs/GUIA_PARA_EL_EQUIPO.md](docs/GUIA_PARA_EL_EQUIPO.md)**: paso a paso desde cero hasta tu primer PR.
 1. [docs/README.md](docs/README.md): el mapa de documentos.
 2. [CONTRIBUTING.md](CONTRIBUTING.md): cómo trabajar.
 3. [docs/gestion/RUBRICA_HISTORIAS_DE_USUARIO.md](docs/gestion/RUBRICA_HISTORIAS_DE_USUARIO.md) y el [backlog de HU](docs/gestion/BACKLOG_HU.md): qué hacer y cómo.

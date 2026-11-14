@@ -1,5 +1,7 @@
 # Documentación de EarthScope AI
 
+> ¿Primera vez? Empieza por la **[Guía para el equipo](GUIA_PARA_EL_EQUIPO.md)**.
+
 ## Mapa de documentos
 
 ![Mapa de documentos](diagramas/00_mapa_de_documentos.png)

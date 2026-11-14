@@ -35,7 +35,7 @@ Las de Python están en el **Backend** (`tests/`); la CI de cada repo las corre 
 | `python tests/test_area.py` | Máscara de polígono, antimeridiano, orientación, punto, polígono diminuto, variable solo de tierra sobre el océano | ✅ |
 | `python tests/test_api.py` | **Contrato de la API** que lee la web (campos, errores 404/422, "land only") | ✅ |
 | `python tests/test_dataset.py` | El dataset en git está completo, se decodifica y el códec es fiel (±½ paso) | ✅ 8 variables · 192 años-variable · 369 MB |
-| `npx --prefix web tsc --noEmit` y `npm --prefix web run lint` | Tipos y estilo de la web | ✅ |
+| `npm --prefix web run typecheck` y `npm --prefix web run lint` | Tipos y estilo de la web | ✅ |
 | `npm --prefix web run build` | Compilación de producción | ✅ |
 
 ## 3. Validaciones hechas a mano

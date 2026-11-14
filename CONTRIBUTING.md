@@ -31,7 +31,7 @@ Si la HU toca los dos repos, abre un issue en cada uno y enlázalos.
 
 ## 4. Antes de abrir un PR
 ```bash
-cd web && npx tsc --noEmit && npm run lint && npm run build
+cd web && npm run typecheck && npm run lint && npm run build
 ```
 Y pruébalo en el navegador con la API del Backend corriendo (`uvicorn api.main:app --port 8000` en el otro repo).
 

@@ -5,7 +5,7 @@
 <!-- HU-XX · Closes #issue · si es "Ambos", enlaza el PR del Backend -->
 
 ## Cómo lo probaste
-- [ ] `cd web && npx tsc --noEmit && npm run lint && npm run build`
+- [ ] `cd web && npm run typecheck && npm run lint && npm run build`
 - [ ] Lo revisé en el navegador (escritorio y móvil si aplica), con la API del Backend corriendo
 
 ## Checklist
