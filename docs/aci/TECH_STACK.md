@@ -32,7 +32,7 @@ ACI debe priorizar compatibilidad reproducible, no instalar a ciegas la versión
 | Raster | Rasterio / rioxarray | Última estable compatible | Raster y COG |
 | Runtime web | Node.js | **26 LTS** | Toolchain web |
 | UI | React / React DOM | **19.3** | Interfaz |
-| Lenguaje UI | TypeScript | **6.0.x** | Tipado |
+| Lenguaje UI | TypeScript | **6.0.3** | Tipado; línea conservadora para compatibilidad de plugins |
 | Bundler | Vite | **8.3.8** | Desarrollo/build |
 | Mapa | MapLibre GL JS | **6.18.0** | Cartografía web |
 | Gráficas | Plotly.js | Última estable compatible | Series y gráficos |
@@ -47,7 +47,7 @@ ACI debe priorizar compatibilidad reproducible, no instalar a ciegas la versión
 ### Por qué Python 3.13.18 y no 3.14/3.15
 Python 3.14.10 es una rama de funcionalidad más nueva, pero 3.13.18 ofrece una base conservadora para validar el ecosistema nativo científico/GIS (NetCDF, HDF, Rasterio, GDAL, PyProj, SciPy). Xarray 2026.9.0 ya requiere Python 3.12 o superior. La elección de 3.13 es deliberada para facilitar ruedas binarias y compatibilidad; revisar en Fase 0 si todos los paquetes existentes ya soportan esta versión.
 
-Node 26 está en LTS; no usar Node 27 Alpha para el entorno del proyecto.
+Node 26 está en LTS; no usar Node 27 Alpha para el entorno del proyecto. Se fija TypeScript 6.0.3 como elección conservadora para la toolchain web; TypeScript 7.0.2 aparece como versión más reciente en el catálogo consultado, pero su adopción se deja para una prueba específica de compatibilidad con ESLint, Vite y plugins antes de cambiar el compilador.
 
 ### SQLAlchemy: mantener 2.0 en el primer corte
 SQLAlchemy 2.1.8 es la versión actual, pero ACI fijará inicialmente la rama de mantenimiento 2.0.57 para reducir riesgos durante la integración de GeoAlchemy2 y Alembic. Antes de migrar a 2.1 se deben pasar tests de geometrías, transacciones y migraciones.
