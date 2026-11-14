@@ -1,185 +1,128 @@
-# Arquitectura técnica
+# Arquitectura técnica — LACI
 
-## 1. Estilo arquitectónico
-
-ACI será inicialmente un **monorepo modular** con una aplicación web, una API y un paquete científico compartido. No será una colección de microservicios independientes en la primera fase.
-
-Los componentes se separan por responsabilidad, pero pueden ejecutarse en contenedores del mismo proyecto. Esto reduce complejidad, facilita tests y permite a Codex trabajar módulo por módulo.
+## 1. Decisiones de diseño
+LACI será un monorepo modular, continental en sus contratos y catálogo, con procesamiento y validación progresivos por región. Se adopta **arquitectura de modelos regionales especializados**. No se construirá un único modelo global como supuesto por defecto. Se comparte infraestructura, normalización, métodos y observabilidad; cada modelo regional mantiene dominio, datos, entrenamiento, evaluación y artefactos propios.
 
 ## 2. Diagrama lógico
-
 ```mermaid
 flowchart TD
-  subgraph Sources[Fuentes externas]
-    NASA[NASA GES DISC / MERRA-2]
-    ERA[Copernicus / ERA5]
-    GFS[NOAA / GFS]
-    SAT[NASA MODIS / GPM / GLDAS]
-    GEO[HydroSHEDS / RAISG / límites administrativos]
+  subgraph Sources[Fuentes]
+    NASA[NASA MERRA-2 / MODIS / GPM / GLDAS]
+    ERA[Copernicus ERA5]
+    GFS[NOAA GFS]
+    GEO[Países, cuencas, biomas y regiones]
   end
-
-  subgraph Ingestion[Ingesta y normalización]
-    ADAPTERS[Adaptadores de fuente]
-    QA[Control de calidad y metadatos]
-    NORMAL[Normalización CF, unidades y tiempo]
-  end
-
-  subgraph Storage[Almacenamiento]
-    OBJECT[(NetCDF / Zarr / COG en filesystem u object storage)]
+  subgraph Core[Plataforma continental común]
+    ING[Adaptadores de ingesta]
+    QA[QA, unidades, tiempo y metadatos]
+    GEOCORE[Catálogo geoespacial / regiones]
+    STORE[(Zarr / NetCDF / COG)]
     DB[(PostgreSQL + PostGIS)]
+    STATS[Motor común de tendencias y eventos]
   end
-
-  subgraph Science[Paquete científico ACI]
-    STATS[Motor de tendencias]
-    EVENTS[Detección y seguimiento de eventos]
-    FORECAST[Integración GFS / motor predictivo ACI]
-    EVAL[Evaluación, incertidumbre y métricas]
+  subgraph Regional[Modelos regionales independientes]
+    R1[Amazonia]
+    R2[Andes]
+    R3[Caribe]
+    R4[Centroamérica y México]
+    R5[Cono Sur / otras regiones]
+    EVAL[Evaluación regional y registro de modelos]
   end
-
-  subgraph Serving[Presentación]
+  subgraph Serve[Servicios]
     API[FastAPI]
     WEB[React + MapLibre + Plotly]
   end
-
-  NASA --> ADAPTERS
-  ERA --> ADAPTERS
-  GFS --> ADAPTERS
-  SAT --> ADAPTERS
-  GEO --> ADAPTERS
-  ADAPTERS --> QA --> NORMAL
-  NORMAL --> OBJECT
-  NORMAL --> DB
-  OBJECT --> STATS
-  OBJECT --> EVENTS
-  OBJECT --> FORECAST
+  NASA --> ING
+  ERA --> ING
+  GFS --> ING
+  GEO --> GEOCORE
+  ING --> QA --> STORE
+  QA --> DB
+  GEOCORE --> DB
+  STORE --> STATS
   STATS --> DB
-  EVENTS --> DB
-  FORECAST --> EVAL --> DB
+  STORE --> R1
+  STORE --> R2
+  STORE --> R3
+  STORE --> R4
+  STORE --> R5
+  R1 --> EVAL
+  R2 --> EVAL
+  R3 --> EVAL
+  R4 --> EVAL
+  R5 --> EVAL
+  EVAL --> DB
   DB --> API
-  OBJECT --> API
+  STORE --> API
   API --> WEB
 ```
 
-## 3. Módulos
+## 3. Capas
+### 3.1 Fuentes y adaptadores
+NASA MERRA-2 y ERA5 para reconstrucción histórica; GFS como pronóstico numérico; productos satelitales para variables específicas. Un adaptador por fuente/producto, idempotente, reanudable y con registro de procedencia.
 
-### 3.1 Ingesta (`packages/aci_core/ingestion`)
-Responsable de descubrir, descargar, verificar y registrar datasets. Un adaptador por fuente/producto. Debe ser idempotente y reanudable: ejecutar dos veces el mismo job no debe duplicar datos.
+### 3.2 Data Core común
+Normaliza nombres CF, unidades, calendario, coordenadas y metadatos sin perder los campos originales. Conserva resolución nativa y quality flags. Xarray/Dask para procesamiento por bloques; Zarr/NetCDF para cubos; Parquet para tablas intermedias.
 
-### 3.2 Normalización (`packages/aci_core/normalization`)
-- Estandarizar nombres de variables sin perder nombre original.
-- Convertir unidades explícitamente.
-- Normalizar calendario y coordenadas.
-- Conservar resolución y CRS originales.
-- Escribir datos científicos a Zarr/NetCDF y tablas auxiliares a Parquet.
+### 3.3 Catálogo geoespacial
+PostGIS guarda geometrías, jerarquías, identificadores estables y relaciones entre países, territorios, regiones analíticas, cuencas y biomas. Las regiones analíticas pueden solaparse. Cada geometría registra fuente, versión, licencia, CRS, escala y fecha. No usar bounding boxes como máscaras científicas.
 
-### 3.3 Geografía (`packages/aci_core/geography`)
-Carga y valida cuenca, bioma, países y sectores. Debe manejar geometrías inválidas, reproyección y antimeridiano si aplica. Mantener identificadores persistentes de regiones.
+### 3.4 Motor científico común
+Climatologías, anomalías, tendencias, detección de calor y patrones de presión. Los métodos y tests son compartidos; los parámetros climatológicos y umbrales se calculan/validan para cada dominio regional.
 
-### 3.4 Tendencias (`packages/aci_core/trends`)
-Cálculo de climatologías, anomalías, tendencias, significancia estadística y corrección por pruebas múltiples. Separado del código de API.
+### 3.5 Motor de modelos regionales
+Cada región/modelo es una unidad versionada con:
+- `region_id`, geometría/dominio y versión de máscara;
+- variables de entrada y target;
+- fuentes y periodos de entrenamiento;
+- lead times/horizontes soportados;
+- particiones temporales y espaciales;
+- baseline y métricas por variable/horizonte;
+- incertidumbre, artefacto, hash y versión de código;
+- estado: experimental, validado, degradado o retirado.
 
-### 3.5 Eventos (`packages/aci_core/events`)
-Detecta episodios mediante umbrales documentados, agrupa celdas conectadas, genera trayectoria y resumen por región. Cada evento conserva el algoritmo y parámetros utilizados.
+Compartir librerías y pipelines no implica compartir pesos ni asumir transferencia entre regiones. Un modelo entrenado para Amazonia no se aplica a Andes o Caribe sin evaluación y autorización explícita. Si los datos de una región son insuficientes, el sistema debe mostrar GFS/baseline o “sin modelo LACI validado”.
 
-### 3.6 Predicción (`packages/aci_core/forecasting`)
-- Lee GFS como baseline externo.
-- Guarda inicialización, tiempo válido, horizonte, ciclo, resolución, fuente y variables.
-- Ejecuta modelos ACI únicamente si cuentan con artefactos, características, entrenamiento y evaluación registrados.
-- Publica incertidumbre y skill scores.
-
-### 3.7 API (`services/api`)
-Expone contratos REST versionados. No ejecuta descargas masivas ni cálculos pesados dentro de una solicitud HTTP. Las operaciones costosas se ejecutan como jobs CLI/worker y la API consulta resultados persistidos.
-
-### 3.8 Web (`apps/web`)
-Interfaz React para mapa, series, tendencias, eventos y pronósticos. Todas las capas muestran fuente, unidad, fecha y naturaleza del dato (reanálisis, observación o forecast).
+### 3.6 API y web
+FastAPI sirve catálogos, series, tendencias, eventos, disponibilidad y forecasts. Trabajos pesados se ejecutan como jobs/worker. React/MapLibre presenta mapas y Plotly series. Todas las vistas informan fuente, naturaleza del dato, unidades, resolución y validez.
 
 ## 4. Almacenamiento
-
-| Tipo de información | Almacenamiento |
-|---|---|
-| Archivos originales de fuente | `data/raw/` local u object storage |
-| Cubos multidimensionales procesados | Zarr v3 |
-| Intercambio y archivos científicos | NetCDF |
-| Resultados raster publicados | COG/GeoTIFF |
-| Tablas intermedias | Parquet |
-| Geometrías, catálogos y metadatos | PostgreSQL/PostGIS |
-| Tendencias, eventos y predicciones resumidas | PostgreSQL/PostGIS |
-| Logs de ejecución | salida estructurada + tabla de jobs |
-
-PostgreSQL no debe almacenar cada píxel de cada hora como una fila relacional. Los cubos gridded se almacenan como Zarr/NetCDF; la base relacional guarda referencias, metadatos, geometrías, resúmenes e índices.
+- Raw: archivos originales en filesystem/object storage fuera de Git.
+- Zarr/NetCDF: cubos científicos.
+- COG/GeoTIFF: rasters publicados.
+- Parquet: tablas intermedias.
+- PostgreSQL/PostGIS: catálogo, regiones, geometrías, jobs, metadatos, resúmenes y registro de modelos.
+No almacenar cada píxel horario como fila SQL.
 
 ## 5. Flujo de datos
+1. Solicitar ingesta por fuente, producto, periodo y regiones.
+2. Descubrir y descargar archivos; verificar checksums.
+3. Leer dimensiones, unidades, calendario, variables y calidad.
+4. Normalizar manteniendo variable original y resolución nativa.
+5. Recortar por geometrías exactas y escribir Zarr/NetCDF.
+6. Registrar procedencia y disponibilidad por región/variable/periodo.
+7. Ejecutar métodos comunes de ciencia.
+8. Entrenar/evaluar modelos regionales solo cuando existan datos apropiados.
+9. Publicar resultados y métricas mediante API.
+10. Mostrar explícitamente regiones sin cobertura suficiente.
 
-1. Un job solicita fuente, producto, periodo y región.
-2. El adaptador descubre archivos disponibles.
-3. Descarga a una zona raw temporal y verifica tamaño/checksum cuando exista.
-4. Lee metadatos y valida dimensiones, unidades, calendario y coordenadas.
-5. Normaliza a nombres CF acordados sin eliminar los metadatos de origen.
-6. Procesa en bloques con Xarray/Dask.
-7. Escribe el resultado versionado en Zarr/NetCDF.
-8. Registra procedencia y cobertura en PostgreSQL.
-9. Los motores científicos consumen datos normalizados.
-10. La API consulta resultados y la web los muestra.
+## 6. Escalabilidad continental
+- Diseñar ingestión por región/periodo/variable para permitir reanudación y cómputo parcial.
+- Usar Dask/Xarray por chunks espaciales/temporales, medir tamaños antes de escalar.
+- No descargar todo el continente ni todo el histórico en el primer sprint.
+- Separar catálogo de disponibilidad de datos realmente procesados.
+- Usar caché/COG/tiles bajo demanda; no enviar grillas densas como GeoJSON.
+- Medir almacenamiento, transferencia, CPU y memoria por región.
+- Mantener una política de retención y versionado de datos/modelos.
 
-## 6. Interfaz de mapas
-
-MapLibre GL JS será el motor de mapa. Las geometrías pequeñas se servirán como GeoJSON. Las grillas científicas grandes no se enviarán como miles de features GeoJSON.
-
-Para el MVP:
-- polígonos de cuenca y bioma como GeoJSON;
-- capas de datos como raster tiles desde COG o imágenes pre-renderizadas;
-- metadatos de capa disponibles desde API;
-- cache de mapas derivados por variable/fecha/fuente.
-
-No implementar un servicio de tiles complejo hasta disponer de un producto COG de prueba y una medición de rendimiento.
-
-## 7. Entorno de desarrollo
-
-Docker Compose levanta DB, API y web. Los procesos de descarga y ciencia se ejecutan con el mismo paquete Python dentro del contenedor worker o mediante comandos locales de `uv`.
-
-Los datos voluminosos se montan en `./data` y se excluyen de Git. MinIO es opcional y solo se activa con un profile de Compose.
-
-## 8. Estructura objetivo
-
-No mover el código existente automáticamente. La estructura deseada a alcanzar de forma incremental es:
-
+## 7. Estructura objetivo
 ```text
-.
-├── AGENTS.md
-├── README.md
-├── pyproject.toml
-├── uv.lock
-├── package.json                 # opcional: scripts de monorepo
-├── apps/
-│   └── web/
-├── services/
-│   └── api/
-├── packages/
-│   └── aci_core/
-│       ├── ingestion/
-│       ├── normalization/
-│       ├── geography/
-│       ├── trends/
-│       ├── events/
-│       ├── forecasting/
-│       └── evaluation/
-├── pipelines/
-│   ├── ingest/
-│   └── jobs/
-├── infra/
-│   └── docker/
-├── migrations/
-├── data/
-│   ├── raw/
-│   ├── interim/
-│   ├── processed/
-│   └── boundaries/
-├── notebooks/
-├── tests/
-├── docs/
-│   └── aci/
-└── legacy/
-    └── streamlit/               # solo tras migración probada
+apps/web/
+services/api/
+packages/laci_core/
+  ingestion/ normalization/ geography/
+  climatology/ trends/ events/ forecasting/
+  regional_models/ evaluation/ registry/
+pipelines/ infra/ migrations/ data/ notebooks/ tests/ docs/aci/
 ```
-
-La primera fase no necesita realizar esta reorganización completa. Codex debe inspeccionar el repositorio y proponer un plan de migración que respete los módulos existentes.
+No reorganizar el repositorio en bloque. Mantener módulos existentes hasta auditar y migrar con PRs pequeños.
