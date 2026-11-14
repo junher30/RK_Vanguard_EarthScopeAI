@@ -31,5 +31,13 @@ flowchart TB
 | [referencia/DATOS_GLOBALES.md](referencia/DATOS_GLOBALES.md) | Datos de todo el planeta (0,5°), MERRA-2, mapas de tendencia y API de análisis de áreas |
 | [referencia/BLUEPRINT_PRODUCTO_FINAL.md](referencia/BLUEPRINT_PRODUCTO_FINAL.md) | Visión completa del producto (incluye lo que todavía no se construyó) |
 
+## Gestión del trabajo
+
+| Documento | Para qué |
+|---|---|
+| [gestion/RUBRICA_HISTORIAS_DE_USUARIO.md](gestion/RUBRICA_HISTORIAS_DE_USUARIO.md) | Formato de las HU, rúbrica de calidad (≥ 13/16), Definición de Listo y de Hecho, flujo y convenciones para los 2 repos |
+| [gestion/BACKLOG_HU.md](gestion/BACKLOG_HU.md) | Lista de HU con estado (numeración única Frontend + Backend) |
+| [PLAN_DE_TRABAJO.md](PLAN_DE_TRABAJO.md) | Tareas hasta la entrega |
+
 ## Diagramas
 Los originales están en [`diagramas/`](diagramas/). Las versiones editables están en Mermaid dentro de cada documento; GitHub las dibuja solas.

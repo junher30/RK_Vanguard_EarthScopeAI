@@ -127,7 +127,7 @@ Un valor científico en una celda, un mes y una variable.
 | valor | 3,12 (o vacío si no hay dato válido: RN-17) |
 | procedencia | archivo NASA original (`source_file`) |
 
-En el código: `data/global/<producto>/<AAAA-MM>.npz` (360 × 720) y `data/grids/amazon_core/<producto>/<AAAA-MM>.npz` (120 × 200).
+En el código (repo Backend): `data/dataset/<variable>/<AAAA>.i16.xz` (global 0,5°, 360 × 720, comprimido, en git) y `data/grids/amazon_core/<producto>/<AAAA-MM>.npz` (Amazonía 0,1°, 120 × 200). Lector: `science/dataset.py`.
 
 ### 3.8. Capa ambiental ⚙️ (💾 como archivo)
 | Atributo | Ejemplo |
@@ -236,7 +236,7 @@ erDiagram
 | Área geográfica, Vértice | 🕒 | Estado de la página + `sessionStorage` (`earthscope.studyZone`) | Hasta cerrar la pestaña (RN-08, RN-09) |
 | Consulta, Período seleccionado | 🕒 | Estado de la página (`useLayer`) | La sesión |
 | Variable, Conjunto de datos | 💾 catálogo | `science/variables.py`, `pipeline/*.py`, `manifest.json` | Versionado en git |
-| Observación | 💾 | `data/global/` (≈ 1,3 GB, fuera de git) y `data/grids/` (en git) | Se regenera con el pipeline |
+| Observación | 💾 | Backend: `data/dataset/` (369 MB comprimido, en git) y `data/grids/` (en git) | Versionado en git; se regenera con el pipeline |
 | Capa ambiental | ⚙️ 💾 | `web/public/data/**/maps/*.png` | Se regenera con `export/` |
 | Resultado de análisis | ⚙️ | API (caché en memoria) o `series/*.json` | Se recalcula bajo demanda |
 

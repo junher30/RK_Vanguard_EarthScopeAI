@@ -80,20 +80,11 @@ NASA Earthdata ──► pipeline/ ──► data/ ──► science/ ──► 
                     calidad
 ```
 
-### 4.2 Estructura del repositorio
-```
-earthscope-ai/
-├── pipeline/       fetch_nasa.py (Amazonía 0,1°) · fetch_global.py (planeta 0,5°, incluye MERRA-2)
-├── science/        trends · variables · whatif · whatif_maps · global_trends · area
-├── export/         build_site_data.py (Amazonía) · build_global_data.py (planeta) → web/public/data
-├── api/            main.py — FastAPI: análisis de cualquier polígono o punto
-├── web/            Next.js 16 — globo, capas, polígono, panel de análisis
-├── app/            streamlit_app.py — app de análisis / respaldo
-├── data/           processed/ y grids/ (en git) · global/ (fuera de git, se regenera)
-├── tests/          validación con datos sintéticos de respuesta conocida
-└── docs/           documentos 01–06, referencia/ y diagramas/
-```
-Detalle por componente: [../05_ARQUITECTURA.md](../05_ARQUITECTURA.md).
+### 4.2 Estructura de los repositorios
+- **Frontend** ([junher30/RK_Vanguard_EarthScopeAI](https://github.com/junher30/RK_Vanguard_EarthScopeAI)): `web/` (Next.js) y `docs/`.
+- **Backend** ([jose6668/RK_Vanguard_EarthScopeAI-BACK](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK)): `pipeline/`, `data/` (con el dataset global completo comprimido), `science/`, `export/`, `api/`, `app/` y `tests/`.
+
+Detalle: [../05_ARQUITECTURA.md](../05_ARQUITECTURA.md).
 
 ### 4.3 Tecnologías
 
@@ -313,6 +304,8 @@ Detalle por componente: [../05_ARQUITECTURA.md](../05_ARQUITECTURA.md).
 | D10 | Streamlit como app de análisis y respaldo | Ya funciona y cubre los 5 pasos |
 | D11 | Análisis de cualquier área: grilla global 0,5° + API FastAPI (`science/area.py`, `api/main.py`) | La ciencia sigue en Python; cada polígono o punto del planeta tiene su serie y tendencia |
 | D12 | Humedad y temperatura del aire con MERRA-2 (reanálisis), marcado como tal | Única fuente NASA continua 2001–2024 para esas variables |
+| D13 | Separar el proyecto en dos repos: Frontend (web + docs) y Backend (ciencia, API, datos) | Que el equipo trabaje en paralelo sin pisarse; contrato fijado por pruebas |
+| D14 | Dataset global completo dentro del repo Backend, comprimido (int16 + delta + shuffle + LZMA, 369 MB) | Que clonar sea suficiente, sin cuentas de NASA ni descargas de 69 GB |
 
 ## 14. Instalación y ejecución
 ```bash

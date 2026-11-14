@@ -6,28 +6,6 @@ on:
     branches: [main]
 
 jobs:
-  backend:
-    name: Backend (science + API) on sample data
-    runs-on: ubuntu-latest
-    env:
-      EARTHSCOPE_DATA: sample
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-          cache-dependency-path: requirements-backend.txt
-      - run: pip install -r requirements-backend.txt
-      - name: Science tests
-        run: |
-          python tests/test_trends.py
-          python tests/test_whatif.py
-          python tests/test_global_trends.py
-          python tests/test_area.py
-      - name: API contract
-        run: python tests/test_api.py
-
   web:
     name: Web (types, lint, build)
     runs-on: ubuntu-latest

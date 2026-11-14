@@ -2,7 +2,8 @@
 
 **Cierre:** domingo 15/11/2026, 11:59 p. m. (hora local) · **Actualizado:** 14/11/2026
 
-Cómo usarlo: pon tu nombre en **Responsable** antes de empezar, crea la rama sugerida (ver [CONTRIBUTING.md](../CONTRIBUTING.md)) y marca ✅ al unir el PR.
+Cómo usarlo: cada tarea es (o se convierte en) una **HU** ([rúbrica](gestion/RUBRICA_HISTORIAS_DE_USUARIO.md), [backlog](gestion/BACKLOG_HU.md)). Pon tu nombre en **Responsable**, crea la rama en el repo correcto y marca ✅ al unir el PR.
+Repos: **F** = Frontend (este) · **B** = [Backend](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK).
 Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2** si sobra tiempo.
 
 ## Ya hecho
@@ -14,7 +15,7 @@ Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2
 
 ## Tareas
 
-### A. Entrega (P0)
+### A. Entrega (P0) — A1 en F, A2 en B
 | # | Tarea | Responsable | Rama | Estado |
 |---|---|---|---|---|
 | A1 | Publicar la web en **Vercel** (raíz `web/`, `NEXT_PUBLIC_API_URL`) | | `chore/deploy-web` | ⏳ |
@@ -24,7 +25,7 @@ Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2
 | A5 | Textos de envío en inglés: resumen, detalles técnicos, uso de NASA, declaración de IA | | `docs/submission` | ⏳ |
 | A6 | Pulsar **"Submit for Judging"** (y otra vez después de cada edición) | | — | ⏳ |
 
-### B. Web (P1)
+### B. Web (P1) — repo F
 | # | Tarea | Doc | Responsable | Rama | Estado |
 |---|---|---|---|---|---|
 | B1 | **Valor por celda** al hacer clic sobre la capa (CU-11) | Doc 02 §6 | | `feat/web-valor-por-celda` | ⏳ |
@@ -35,12 +36,13 @@ Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2
 | B6 | Comparador antes/después con cortina (2001 frente a 2024) | Doc técnico §7.2 | | `feat/web-comparador` | ⏳ P2 |
 | B7 | Evidence Graph (Cytoscape) | Doc técnico §6.3 | | `feat/web-evidence-graph` | ⏳ P2 |
 
-### C. Ciencia y datos (P1)
+### C. Ciencia y datos (P1) — repo B
 | # | Tarea | Responsable | Rama | Estado |
 |---|---|---|---|---|
 | C1 | Prueba automática de `science/area.py` (polígono, antimeridiano, punto, océano) | | `feat/science-test-area` | ✅ |
 | C2 | Pruebas de la API con `fastapi.testclient` | | `feat/api-tests` | ✅ |
-| C6 | Activar la protección de `main` en GitHub ([CONTRIBUTING §4](../CONTRIBUTING.md)) | dueño del repo | — | ⏳ |
+| C6 | Activar la protección de ramas en los dos repos (CONTRIBUTING de cada uno) | dueños de los repos | — | ⏳ |
+| C7 | Dataset global completo en git (Backend, 369 MB) | | — | ✅ |
 | C3 | Exportar valores por celda cuantizados para B1 | | `feat/export-valores-celda` | ⏳ |
 | C4 | Generalizar el What-If a cualquier área con validación fuera de muestra | | `feat/science-whatif-global` | ⏳ P2 |
 | C5 | Exportar mapas **mensuales** globales (RF-11) | | `feat/export-mensual` | ⏳ P2 |

@@ -1,4 +1,4 @@
-# EarthScope AI — Planetary Investigation Lab
+# EarthScope AI — Planetary Investigation Lab · Frontend y documentación
 
 **Equipo RoboKids · NASA Space Apps Challenge 2026 · "Be an Earth System Trend Detective"**
 
@@ -10,62 +10,68 @@ Un globo 3D donde cualquier persona elige un lugar o dibuja un área del planeta
 - su significancia estadística y una prueba de robustez;
 - las advertencias de cada fuente.
 
-## Estructura
+## Dos repositorios
 
-| Carpeta | Qué hay | Lenguaje |
-|---|---|---|
-| [`web/`](web/) | Aplicación web (globo, capas, polígono, panel de análisis) | Next.js 16 · TypeScript |
-| [`api/`](api/) | API de análisis de cualquier área (`POST /api/v1/area/analyze`) | FastAPI |
-| [`science/`](science/) | **Única fuente de verdad científica**: tendencias, What-If, tendencias por celda, análisis de área | Python |
-| [`pipeline/`](pipeline/) | Descarga y procesamiento de datos NASA (Amazonía 0,1° y planeta 0,5°) | Python |
-| [`export/`](export/) | Genera los PNG y JSON que la web muestra | Python |
-| [`app/`](app/) | App Streamlit de análisis (respaldo) | Python |
-| [`tests/`](tests/) | Validación con datos sintéticos | Python |
-| [`docs/`](docs/) | Documentos 01–06, referencia y diagramas | Markdown |
-| `data/` | `processed/`, `grids/` y `sample/` (muestra global 2°) en git; `global/` se regenera (≈ 1,9 GB) | — |
+| Repo | Qué tiene |
+|---|---|
+| **Este (Frontend)** — [junher30/RK_Vanguard_EarthScopeAI](https://github.com/junher30/RK_Vanguard_EarthScopeAI) | `web/` (Next.js) y `docs/` (toda la documentación del proyecto y la gestión de historias de usuario) |
+| **Backend** — [jose6668/RK_Vanguard_EarthScopeAI-BACK](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK) | Ciencia (`science/`), API (`api/`), pipeline NASA, exportadores y el **dataset global completo** (369 MB, viene al clonar) |
 
-**¿Por dónde empiezo?**
-1. Lee [docs/README.md](docs/README.md), el mapa de documentos.
-2. Lee [CONTRIBUTING.md](CONTRIBUTING.md): cómo trabajar en equipo.
-3. Elige una tarea en [docs/PLAN_DE_TRABAJO.md](docs/PLAN_DE_TRABAJO.md).
+```mermaid
+flowchart LR
+    subgraph BACK["Backend"]
+        DS[("dataset NASA")] --> S["science/"] --> API["api/"]
+        S --> E["export/"]
+    end
+    subgraph FRONT["Frontend (este repo)"]
+        D[("web/public/data<br/>PNG + JSON")] --> UI["web/"]
+    end
+    E -- "escribe" --> D
+    API -- "POST /api/v1/area/analyze" --> UI
+```
 
 ## Inicio rápido
 
+Clona los dos repos uno al lado del otro:
 ```bash
-# Python
+git clone https://github.com/junher30/RK_Vanguard_EarthScopeAI.git
+git clone https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK.git
+```
+
+```bash
+# Backend (API de análisis de áreas) → http://localhost:8000/docs
+cd RK_Vanguard_EarthScopeAI-BACK
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# Web
-npm --prefix web install
-python export/build_site_data.py          # capas de la Amazonía (los datos ya están en git)
-npm --prefix web run dev                  # http://localhost:3000
-
-# API de análisis de áreas: sin datos globales usa la muestra de 2° que está en el repo
-uvicorn api.main:app --port 8000          # http://localhost:8000/docs
+pip install -r requirements-backend.txt
+uvicorn api.main:app --reload --port 8000
 ```
-
-**¿Solo vas a trabajar en el backend?** Instala `requirements-backend.txt` (liviano) y no descargues nada. Ver [CONTRIBUTING.md §3](CONTRIBUTING.md).
-
-### Datos NASA
-Requiere una cuenta [Earthdata Login](https://urs.earthdata.nasa.gov) con las aplicaciones **"NASA GESDISC DATA ARCHIVE"** y **"LP DAAC Data Pool"** aprobadas (sin eso la descarga da error 401), y un `~/.netrc` con el usuario y la contraseña.
 
 ```bash
-python pipeline/fetch_nasa.py --product all       # Amazonía central 0,1° (ya en git)
-python pipeline/fetch_global.py --product all     # Planeta 0,5° (≈ 69 GB de descarga, 1,3 GB en disco; ~1 h)
-python export/build_global_data.py                # capas globales y mapas de tendencia para la web
+# Frontend → http://localhost:3000
+cd RK_Vanguard_EarthScopeAI
+npm --prefix web install
+npm --prefix web run dev
 ```
-Las descargas reanudan solas si se cortan.
+
+- Las capas del globo (`web/public/data/`) ya están en este repo, así que la web funciona aunque la API esté apagada. Lo único que necesita la API es el análisis de "Your area".
+- La URL de la API se configura con `NEXT_PUBLIC_API_URL` (por defecto `http://localhost:8000`).
+- Para regenerar las capas, desde el Backend: `python export/build_global_data.py` y `python export/build_site_data.py`. Escriben solas en `../RK_Vanguard_EarthScopeAI/web/public/data/`.
+
+## Estructura de este repo
+
+| Carpeta | Qué hay |
+|---|---|
+| [`web/`](web/) | App Next.js 16: globo (react-globe.gl), capas, polígono, panel de análisis. Antes de tocarla, lee `web/AGENTS.md` |
+| [`docs/`](docs/) | Documentos 01–06, referencia, diagramas, **gestión de HU** y plan de trabajo |
+| `.github/` | CI de la web, plantillas de PR y de issues (incluye "Historia de usuario") |
+
+**¿Por dónde empiezo?**
+1. [docs/README.md](docs/README.md): el mapa de documentos.
+2. [CONTRIBUTING.md](CONTRIBUTING.md): cómo trabajar.
+3. [docs/gestion/RUBRICA_HISTORIAS_DE_USUARIO.md](docs/gestion/RUBRICA_HISTORIAS_DE_USUARIO.md) y el [backlog de HU](docs/gestion/BACKLOG_HU.md): qué hacer y cómo.
 
 ## Fuentes NASA
-| Variable | Producto | DOI |
-|---|---|---|
-| Precipitación | GPM IMERG Final Monthly V07 | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) |
-| Vegetación (EVI/NDVI) | MODIS/Terra MOD13C2 v6.1 | [10.5067/MODIS/MOD13C2.061](https://doi.org/10.5067/MODIS/MOD13C2.061) |
-| Temperatura de superficie | MODIS/Terra MOD11C3 v6.1 | [10.5067/MODIS/MOD11C3.061](https://doi.org/10.5067/MODIS/MOD11C3.061) |
-| Temperatura del aire y humedad (reanálisis) | MERRA-2 M2TMNXSLV v5.12.4 | [10.5067/AP1B0BA5PD2K](https://doi.org/10.5067/AP1B0BA5PD2K) |
-
-Imágenes del globo: NASA Blue Marble / Black Marble. Fronteras: Natural Earth.
+GPM IMERG V07 · MODIS MOD13C2 y MOD11C3 v6.1 · MERRA-2 M2TMNXSLV (reanálisis). DOI y detalles en el [README del Backend](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK#fuentes-nasa). Imágenes del globo: NASA Blue Marble / Black Marble. Fronteras: Natural Earth.
 
 ## Uso de IA
 Se usó un asistente de IA (Claude, de Anthropic) para asesoría técnica, código y documentación. Detalle en [docs/referencia/DOCUMENTACION_TECNICA.md §17](docs/referencia/DOCUMENTACION_TECNICA.md).

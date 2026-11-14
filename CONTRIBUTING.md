@@ -1,78 +1,47 @@
-# Cómo trabajar en EarthScope AI
+# Cómo trabajar en EarthScope AI (Frontend y documentación)
 
-## 1. Flujo con Git
+El proyecto tiene dos repos:
+- **Frontend** (este): `web/` y `docs/`.
+- **Backend**: [jose6668/RK_Vanguard_EarthScopeAI-BACK](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK), que tiene ciencia, API, pipeline y dataset. Sus reglas están en su propio `CONTRIBUTING.md`.
 
-1. Actualiza `main`: `git checkout main && git pull`.
-2. Crea una rama por tarea: `git checkout -b <tipo>/<area>-<descripcion-corta>`.
-   - Tipos: `feat` (función nueva), `fix` (corrección), `docs`, `data`, `chore`.
-   - Áreas: `web`, `api`, `science`, `pipeline`, `export`, `docs`.
-   - Ejemplos: `feat/web-valor-por-celda`, `docs/requerimientos-criterios`.
-3. Haz commits pequeños con mensajes claros: `feat(web): show cell value on click`.
-4. Sube la rama (`git push -u origin <rama>`) y abre un **Pull Request** hacia `main` usando la plantilla.
-5. Otra persona del equipo lo revisa antes de unirlo. Que nadie haga push directo a `main`.
-6. Si tu tarea viene de [docs/PLAN_DE_TRABAJO.md](docs/PLAN_DE_TRABAJO.md), márcala como hecha en el mismo PR.
+## 1. Historias de usuario primero
+Todo trabajo parte de una **HU** (issue con la plantilla "Historia de usuario"), que debe sacar **≥ 13/16** en la rúbrica:
+[docs/gestion/RUBRICA_HISTORIAS_DE_USUARIO.md](docs/gestion/RUBRICA_HISTORIAS_DE_USUARIO.md) · backlog en [docs/gestion/BACKLOG_HU.md](docs/gestion/BACKLOG_HU.md).
+Si la HU toca los dos repos, abre un issue en cada uno y enlázalos.
 
-## 2. Reglas del proyecto
+## 2. Flujo con Git
+1. `git checkout main && git pull`
+2. `git checkout -b <tipo>/HU-<n>-<descripcion>`, por ejemplo `feat/HU-08-recorte-poligono`. Tipos: `feat`, `fix`, `docs`, `chore`.
+3. Commits pequeños: `feat(web): clip layer to the study area (HU-08)`.
+4. `git push -u origin <rama>` y abre un **PR hacia `main`** con la plantilla y `Closes #<issue>`.
+5. Otra persona lo revisa y la CI tiene que estar en verde. Nadie sube directo a `main`.
+6. En el mismo PR, marca la HU y la tarea como hechas en `docs/gestion/BACKLOG_HU.md` y `docs/PLAN_DE_TRABAJO.md`.
 
+## 3. Reglas
 | Regla | Por qué |
 |---|---|
-| **La web nunca calcula ciencia.** Tendencias, promedios y pruebas van en `science/`, y la web los recibe por `export/` o por la API. | Una sola fuente de verdad, revisable y con pruebas |
-| Todo texto visible en la web va en **inglés**. | Regla del evento |
-| Cada dato muestra su **fuente y DOI**. El reanálisis (MERRA-2) se marca como tal. | Criterio de validez del jurado |
-| No subir `data/global/`, `logs/`, `.env`, `node_modules/` ni archivos crudos de NASA. Si regeneras los datos globales, actualiza la muestra con `python pipeline/make_sample.py`. | Pesan GB o son privados |
-| Si cambias `science/` o `export/`, vuelve a ejecutar los exportadores y sube los `web/public/data/` resultantes. | La web lee esos archivos |
-| Si agregas una región, agrégala en `science/variables.py` **y** en `web/lib/regions.ts`. | La web replica el catálogo de regiones |
+| **La web nunca calcula ciencia.** Muestra lo que exporta el Backend (`web/public/data/`) o lo que responde la API. | Una sola fuente de verdad (en el Backend), revisable y con pruebas |
+| Todo texto visible va en **inglés**. | Regla del evento |
+| Cada dato muestra su **fuente y DOI**; el reanálisis (MERRA-2) se marca como tal. | Validez ante el jurado |
+| `web/public/data/` **no se edita a mano**: se regenera con los exportadores del Backend. | Evita datos inventados |
+| Si cambia la respuesta de la API: PR coordinado en los dos repos (`web/lib/api.ts`, `InsightPanel.tsx` ↔ `tests/test_api.py` del Backend). | Que un repo no rompa al otro |
+| Las regiones de `web/lib/regions.ts` replican `science/variables.py` del Backend. | Si agregas una, agrégala en los dos |
 | Antes de tocar `web/`, lee `web/AGENTS.md` (Next.js 16 cambió mucho). | Evitar código de versiones viejas |
 | Nada de imágenes, voces ni nombres de menores en el producto ni en el demo. | Regla del evento |
 
-## 3. Trabajar en el backend sin los datos globales
-
-No necesitas descargar los 1,9 GB de NASA para editar `science/`, `api/` o `export/`.
-El repo trae una **muestra** en `data/sample/` (27 MB): las 5 variables, los 288 meses, con una grilla de 2°. La API la usa sola cuando no encuentra `data/global/`.
-
+## 4. Antes de abrir un PR
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-backend.txt         # liviano: sin librerías de descarga NASA
-uvicorn api.main:app --reload --port 8000       # usa la muestra → http://localhost:8000/docs
-npm --prefix web run dev                        # la web habla con tu API local
-```
-
-| `EARTHSCOPE_DATA` | Qué usa | Para qué |
-|---|---|---|
-| `auto` (por defecto) | `data/global/` si existe; si no, la muestra | Normal |
-| `sample` | Siempre la muestra de 2° | Desarrollar y correr las pruebas (lo que hace la CI) |
-| `full` | Siempre los datos completos de 0,5° (falla si no están) | Resultados reales y demo |
-
-⚠️ Los resultados de la muestra son **solo para desarrollo**. La API los marca con `"source": "sample"` y la web muestra "2° sample". Las conclusiones y el demo usan siempre los datos completos.
-
-**Qué no se puede romper:** el **formato de respuesta de la API**, porque la web depende de él. `tests/test_api.py` lo verifica. Si necesitas cambiar un campo, cambia también `web/lib/api.ts` y `web/components/data/InsightPanel.tsx` en el mismo PR.
-
-## 4. Protección automática
-
-- **CI (GitHub Actions, `.github/workflows/ci.yml`):** en cada PR corre las pruebas de ciencia y de la API sobre la muestra, y los tipos, el lint y la compilación de la web. Si algo falla, el PR aparece en rojo.
-- **Protección de `main`** (la configura el dueño del repo una vez): *Settings → Branches → Add branch ruleset*, sobre `main`:
-  - ✅ Require a pull request before merging (1 aprobación)
-  - ✅ Require status checks to pass: `Backend (science + API) on sample data` y `Web (types, lint, build)`
-  - ✅ Block force pushes
-
-  Así nadie puede romper `main`: todo entra por PR, con las pruebas en verde y la revisión de otra persona.
-
-## 5. Antes de abrir un PR
-
-```bash
-# Python (usa la muestra; no hace falta data/global)
-export EARTHSCOPE_DATA=sample
-python tests/test_trends.py && python tests/test_whatif.py && python tests/test_global_trends.py
-python tests/test_area.py && python tests/test_api.py
-
-# Web
 cd web && npx tsc --noEmit && npm run lint && npm run build
 ```
+Y pruébalo en el navegador con la API del Backend corriendo (`uvicorn api.main:app --port 8000` en el otro repo).
 
-## 6. Dónde está cada cosa
-Ver [docs/05_ARQUITECTURA.md](docs/05_ARQUITECTURA.md).
+## 5. Protección de `main` (la configura el dueño del repo una vez)
+*Settings → Branches → Add branch ruleset* sobre `main`:
+- ✅ Require a pull request before merging (1 aprobación)
+- ✅ Require status checks to pass: `Web (types, lint, build)`
+- ✅ Block force pushes
 
-## 7. Documentación
-- Los documentos siguen el orden 01 → 02 → 03 → 04 → arquitectura → implementación ([docs/README.md](docs/README.md)).
-- Si un cambio afecta un caso de uso, regla o requerimiento, actualiza su estado (✅ 🟡 ⏳) en el documento correspondiente.
-- Diagramas: versión editable en Mermaid dentro del `.md`, y la imagen original en `docs/diagramas/`.
+## 6. Documentación
+- Orden de los documentos: 01 → 02 → 03 → 04 → arquitectura → implementación ([docs/README.md](docs/README.md)).
+- Si un cambio afecta un caso de uso, regla, requerimiento o HU, actualiza su estado (✅ 🟡 ⏳).
+- Diagramas: Mermaid dentro del `.md` y la imagen original en `docs/diagramas/`.

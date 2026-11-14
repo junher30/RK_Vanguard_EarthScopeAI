@@ -1,5 +1,7 @@
 # EarthScope AI — Datos globales de NASA
 
+> Los datos, el código y la versión al día de este documento están en el **Backend**: [https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK) (ver `docs/DATASET.md`). El dataset completo viene con ese repo.
+
 **Fecha:** 14 de noviembre de 2026
 **Relacionados:** [DOCUMENTACION.md](DOCUMENTACION_TECNICA.md) · [Documento 02](../02_CASOS_DE_USO.md)
 

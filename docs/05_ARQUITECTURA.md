@@ -1,11 +1,20 @@
 # EarthScope AI
 ## Diseño de arquitectura
 
-**Versión:** 1.0 (describe lo que está construido) · **Fecha:** 14 de noviembre de 2026
+**Versión:** 1.1 (dos repositorios: Frontend y Backend) · **Fecha:** 14 de noviembre de 2026
 
 ## 1. Principio rector
 
 **La interfaz nunca calcula ciencia.** Python (`science/`) es la única fuente de verdad. La web solo muestra resultados que vienen de archivos exportados o de la API.
+
+## 1.1. Repositorios
+
+| Repo | Contenido |
+|---|---|
+| **Frontend** — [junher30/RK_Vanguard_EarthScopeAI](https://github.com/junher30/RK_Vanguard_EarthScopeAI) | `web/` (Next.js) · `docs/` (documentación y gestión de HU) |
+| **Backend** — [jose6668/RK_Vanguard_EarthScopeAI-BACK](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK) | `pipeline/` · `data/` (incluye el **dataset global completo** en `data/dataset/`, 369 MB) · `science/` · `export/` · `api/` · `app/` · `tests/` |
+
+El único punto de contacto entre los dos son (1) los archivos que `export/` escribe en `web/public/data/` y (2) el **contrato de la API** (`tests/test_api.py` en el Backend ↔ `web/lib/api.ts` en el Frontend).
 
 ## 2. Vista general
 
@@ -39,14 +48,14 @@ flowchart LR
 
 | Capa | Carpeta | Tecnología | Responsabilidad |
 |---|---|---|---|
-| Ingesta | `pipeline/` | Python, earthaccess, h5py, pyhdf | Descargar mes a mes, control de calidad, re-grillar y borrar el archivo crudo; se puede reanudar |
-| Datos | `data/` | `.npz`, CSV | Grillas mensuales: Amazonía 0,1° (en git), global 0,5° (fuera de git) y **muestra global 2°** (`data/sample/`, en git, para desarrollo) |
-| Ciencia | `science/` | NumPy, pandas, SciPy | Tendencias (Mann-Kendall estacional, Sen, OLS AR(1)), What-If, tendencias por celda, análisis de área |
-| Exportación | `export/` | Python, Pillow | Generar PNG coloreados y JSON (series, tendencia, manifiesto) para la web |
-| API | `api/` | FastAPI, Uvicorn | Análisis de cualquier polígono o punto bajo demanda |
-| Web | `web/` | Next.js 16, React 19, TypeScript, Tailwind 4, react-globe.gl (three.js), Recharts, Motion, Zustand | Experiencia interactiva |
-| App de análisis | `app/` | Streamlit, Plotly | Los 5 pasos del reto; respaldo |
-| Pruebas | `tests/` | Python | Validación con datos sintéticos de respuesta conocida |
+| Ingesta | `pipeline/` (Backend) | Python, earthaccess, h5py, pyhdf | Descargar mes a mes, control de calidad, re-grillar y borrar el archivo crudo; se puede reanudar |
+| Datos | `data/` (Backend) | `.npz`, CSV, `.i16.xz` | Amazonía 0,1°; **dataset global 0,5° completo comprimido** (`data/dataset/`, 369 MB, en git, ver [DATASET.md](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK/blob/main/docs/DATASET.md)); muestra 2° (`data/sample/`) para CI |
+| Ciencia | `science/` (Backend) | NumPy, pandas, SciPy | Tendencias (Mann-Kendall estacional, Sen, OLS AR(1)), What-If, tendencias por celda, análisis de área |
+| Exportación | `export/` (Backend → escribe en `web/public/data/` del Frontend) | Python, Pillow | Generar PNG coloreados y JSON (series, tendencia, manifiesto) para la web |
+| API | `api/` (Backend) | FastAPI, Uvicorn | Análisis de cualquier polígono o punto bajo demanda |
+| Web | `web/` (Frontend) | Next.js 16, React 19, TypeScript, Tailwind 4, react-globe.gl (three.js), Recharts, Motion, Zustand | Experiencia interactiva |
+| App de análisis | `app/` (Backend) | Streamlit, Plotly | Los 5 pasos del reto; respaldo |
+| Pruebas | `tests/` (Backend) · CI de la web (Frontend) | Python | Validación con datos sintéticos de respuesta conocida |
 
 ## 4. Web (`web/`)
 
@@ -84,7 +93,7 @@ web/
 
 Documentación interactiva en `http://localhost:8000/docs`. CORS abierto (datos públicos, sin credenciales).
 
-**Datos que usa** (`EARTHSCOPE_DATA`): `full` (0,5°, `data/global/`), `sample` (2°, `data/sample/`, en git) o `auto` (completo si existe; si no, la muestra). Cada respuesta indica `area.source` y `area.grid`.
+**Datos que usa** (`EARTHSCOPE_DATA`): `full` (0,5°, `data/dataset/`, en git), `sample` (2°, `data/sample/`) o `auto` (el completo). Cada respuesta indica `area.source` y `area.grid`.
 
 ## 6. Flujo de datos de una consulta de área
 
@@ -110,7 +119,7 @@ sequenceDiagram
 | Pieza | Destino | Nota |
 |---|---|---|
 | Web | Vercel | `web/` como raíz del proyecto. Variable `NEXT_PUBLIC_API_URL` = URL pública de la API |
-| API | Render o Hugging Face Spaces | Necesita los cubos globales (`data/global/cubes/*.npy`, ≈ 1,5 GB) o una versión reducida (float16, ≈ 750 MB) |
+| API | Render o Hugging Face Spaces | El dataset viene con el repo Backend (369 MB); al arrancar se decodifica a `data/.cache/` (≈ 1,9 GB de disco temporal) |
 | Respaldo | Streamlit Community Cloud | `app/streamlit_app.py` |
 
 ## 8. Decisiones

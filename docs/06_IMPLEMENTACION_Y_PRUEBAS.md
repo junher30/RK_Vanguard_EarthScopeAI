@@ -5,29 +5,27 @@
 
 ## 1. Cómo correr todo en local
 
+Dos repos, uno al lado del otro: Frontend ([junher30/RK_Vanguard_EarthScopeAI](https://github.com/junher30/RK_Vanguard_EarthScopeAI)) y Backend ([jose6668/RK_Vanguard_EarthScopeAI-BACK](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK)).
+
 ```bash
-# 1. Python (una vez)
+# Backend (el dataset completo viene al clonar)
+cd RK_Vanguard_EarthScopeAI-BACK
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-backend.txt
+uvicorn api.main:app --port 8000                     # API → http://localhost:8000/docs
+python export/build_global_data.py                   # (opcional) regenera las capas en ../RK_Vanguard_EarthScopeAI/web/public/data
 
-# 2. Web (una vez)
-npm --prefix web install
-
-# 3. Datos (requiere Earthdata Login en ~/.netrc; reanudan solos si se cortan)
-python pipeline/fetch_nasa.py --product all          # Amazonía 0,1° (ya está en git)
-python pipeline/fetch_global.py --product all        # Planeta 0,5° (≈ 69 GB de descarga, 1,3 GB en disco)
-
-# 4. Exportar para la web
-python export/build_site_data.py
-python export/build_global_data.py
-
-# 5. Levantar
-uvicorn api.main:app --port 8000                     # API  → http://localhost:8000/docs
-npm --prefix web run dev                             # Web  → http://localhost:3000
-streamlit run app/streamlit_app.py                   # App de análisis → http://localhost:8501
+# Frontend
+cd ../RK_Vanguard_EarthScopeAI
+npm --prefix web install && npm --prefix web run dev # Web → http://localhost:3000
 ```
 
+Para descargar datos nuevos de NASA, ver [DATASET.md del Backend](https://github.com/jose6668/RK_Vanguard_EarthScopeAI-BACK/blob/main/docs/DATASET.md).
+
 ## 2. Pruebas automáticas
+
+Las de Python están en el **Backend** (`tests/`); la CI de cada repo las corre en cada PR.
+
 
 | Prueba | Qué verifica | Resultado |
 |---|---|---|
@@ -36,6 +34,7 @@ streamlit run app/streamlit_app.py                   # App de análisis → http
 | `python tests/test_global_trends.py` | Las tendencias por celda recuperan +0,15/año; potencia y falsos positivos | ✅ 0,150 · 99 % · 5,2 % |
 | `python tests/test_area.py` | Máscara de polígono, antimeridiano, orientación, punto, polígono diminuto, variable solo de tierra sobre el océano | ✅ |
 | `python tests/test_api.py` | **Contrato de la API** que lee la web (campos, errores 404/422, "land only") | ✅ |
+| `python tests/test_dataset.py` | El dataset en git está completo, se decodifica y el códec es fiel (±½ paso) | ✅ 8 variables · 192 años-variable · 369 MB |
 | `npx --prefix web tsc --noEmit` y `npm --prefix web run lint` | Tipos y estilo de la web | ✅ |
 | `npm --prefix web run build` | Compilación de producción | ✅ |
 
