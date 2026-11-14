@@ -24,3 +24,16 @@ python pipeline/fetch_nasa.py --product lst
 - MOD13C2 v6.1: https://doi.org/10.5067/MODIS/MOD13C2.061
 - MOD11C3 v6.1: https://doi.org/10.5067/MODIS/MOD11C3.061
 - GPM IMERG Final Monthly V07: https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07
+
+
+---
+
+## New architecture: Amazon Climate Intelligence (ACI)
+
+The repository is being evolved toward **Amazon Climate Intelligence**, a modular platform for Amazon-basin climate trend detection and atmospheric forecast analysis.
+
+- [ACI technical specification and architecture](docs/aci/README.md)
+- [Codex instructions](AGENTS.md)
+- [Initial Codex task / bootstrap prompt](docs/aci/CODEX_BOOTSTRAP_PROMPT.md)
+
+The existing EarthScope AI / Streamlit prototype is preserved while the new architecture is audited and implemented incrementally. See `docs/aci/ROADMAP.md`.
