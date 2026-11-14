@@ -1,46 +1,44 @@
-# Amazon Climate Intelligence (ACI)
+# LatAm Climate Intelligence (LACI)
 
-**Especificación técnica para desarrollar una plataforma de detección de tendencias y análisis predictivo atmosférico en la Amazonía.**
+**Plataforma de inteligencia climática para analizar tendencias, detectar eventos y evaluar la evolución de temperatura/calor y presión/circulación atmosférica en América Latina y el Caribe.**
 
-Estado: especificación inicial; no representa todavía una plataforma implementada ni un pronóstico meteorológico operativo.
+Estado: especificación técnica; no representa todavía una plataforma continental implementada ni un servicio de pronóstico operativo.
 
-## Documentos de referencia
+## Decisiones oficiales del producto
+- Cobertura: América Latina y el Caribe.
+- Implementación: arquitectura continental, despliegue y validación progresivos por región.
+- IA: modelos regionales especializados.
+- Prioridad científica equilibrada: temperatura/calor y presión/circulación.
 
+## Documentos
 1. [Especificación del producto](PRODUCT_SPEC.md)
-2. [Stack tecnológico y versiones](TECH_STACK.md)
+2. [Stack tecnológico](TECH_STACK.md)
 3. [Arquitectura](ARCHITECTURE.md)
-4. [Fuentes de datos y geografía](DATA_SOURCES.md)
+4. [Fuentes y geografía](DATA_SOURCES.md)
 5. [Métodos científicos y ML](SCIENCE_AND_ML.md)
-6. [Contratos de API](API_CONTRACTS.md)
-7. [Plan de implementación](ROADMAP.md)
+6. [Contratos API](API_CONTRACTS.md)
+7. [Roadmap](ROADMAP.md)
 8. [Decisiones de arquitectura](DECISIONS.md)
-9. [Guía de ejecución para Codex](CODEX_BOOTSTRAP_PROMPT.md)
+9. [Prompt de inicio para Codex](CODEX_BOOTSTRAP_PROMPT.md)
 
-Las instrucciones obligatorias para agentes de código están en el [AGENTS.md de la raíz](../../AGENTS.md).
+Las instrucciones obligatorias para agentes están en [AGENTS.md](../../AGENTS.md).
 
 ## Producto en una frase
+LACI integra observaciones, reanálisis y pronósticos numéricos para describir tendencias, detectar anomalías térmicas y de presión, y evaluar modelos predictivos regionales con trazabilidad, incertidumbre y validación independiente.
 
-ACI integra reanálisis históricos, observaciones satelitales y pronósticos numéricos para analizar tendencias de temperatura y presión, detectar patrones atmosféricos relevantes y mostrar la evolución esperada de la presión y de condiciones propicias para olas de calor en la cuenca amazónica.
+## Alcance geográfico y estrategia
+El sistema se diseña desde el inicio para América Latina y el Caribe, incluidos México, Centroamérica, Caribe y Sudamérica. La cobertura continental del catálogo y de los contratos no significa que todas las regiones tengan datos procesados o modelos validados desde el primer release. La ingesta, el análisis y los modelos se habilitan por etapas según disponibilidad y calidad de datos.
 
-## Relación con el repositorio actual
+Las regiones analíticas pueden solaparse (por ejemplo, Amazonia y Andes) y no deben confundirse con países ni con límites de cuencas/biomas. La Amazonia se conserva como primer piloto científico, no como límite del producto.
 
-Este repositorio ya contiene un prototipo EarthScope AI/Streamlit y experimentos con productos NASA. ACI es la evolución arquitectónica propuesta. El prototipo actual debe conservarse y auditarse antes de cualquier migración. No asumir que los módulos antiguos ya cumplen los contratos, límites espaciales o criterios científicos definidos aquí.
+## Prioridad científica
+Temperatura y calor, así como presión y circulación, tienen prioridad equivalente en el diseño. Se deben mantener separadas las variables físicamente distintas: temperatura del aire a 2 m vs. LST; presión superficial (PS) vs. presión a nivel del mar (MSL/SLP).
 
-## Alcance geográfico
-
-ACI mantiene dos máscaras geográficas distintas:
-- **Cuenca hidrográfica amazónica:** límite de drenaje hacia el sistema amazónico.
-- **Bioma amazónico por país:** intersección de la geometría del bioma con los límites nacionales, para comparar las porciones amazónicas de Brasil, Perú, Colombia, Bolivia, Ecuador, Venezuela, Guyana, Surinam y Guayana Francesa.
-
-No se debe confundir la cuenca, el bioma y el territorio completo de un país.
-
-## Prioridad del producto
-
-La prioridad funcional es doble: análisis estadístico reproducible y evaluación predictiva. Para el componente predictivo, el pronóstico numérico GFS será primero la referencia operativa; un modelo ML propio solo se presentará como pronóstico cuando supere una validación temporal independiente y disponga de datos de entrenamiento adecuados.
+## Relación con el repositorio
+Este repositorio ya contiene un prototipo EarthScope AI/Streamlit y experimentos NASA. LACI es una evolución arquitectónica propuesta. Auditar antes de migrar; conservar el prototipo y no asumir que sus máscaras actuales representan el continente.
 
 ## Cómo empezar
-
 1. Leer [AGENTS.md](../../AGENTS.md).
-2. Leer los documentos de esta carpeta.
-3. Ejecutar la auditoría descrita en [CODEX_BOOTSTRAP_PROMPT.md](CODEX_BOOTSTRAP_PROMPT.md).
-4. Trabajar por fases de [ROADMAP.md](ROADMAP.md), sin implementar todo de una vez.
+2. Leer todos los documentos de esta carpeta.
+3. Ejecutar solo la auditoría de Fase 0 descrita en [CODEX_BOOTSTRAP_PROMPT.md](CODEX_BOOTSTRAP_PROMPT.md).
+4. Seguir el [roadmap](ROADMAP.md) por entregables verificables.
