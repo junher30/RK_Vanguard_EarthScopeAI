@@ -1,149 +1,50 @@
-# Roadmap de implementación ACI
+# Roadmap de implementación — LACI
 
-## Principio de ejecución
+## Principio
+La arquitectura, catálogo y contratos son continentales; la implementación científica y los modelos avanzan por regiones según datos, calidad y capacidad de validación. Una fase por PR. No descargar el histórico continental al inicio. La secuencia es por entregables, no fechas arbitrarias.
 
-Implementar una fase por PR. El orden depende de entregables verificables, no de fechas arbitrarias. La planificación anterior de ocho semanas es una estimación de organización; la aceptación de cada fase depende de pruebas y calidad de datos.
-
-## Fase 0 — Auditoría y protección del prototipo
-**Objetivo:** entender qué ya existe y definir cómo evolucionarlo.
-
-Tareas:
-- Inventariar archivos, dependencias, entradas de datos, salidas y comandos.
-- Ejecutar pruebas existentes.
-- Auditar `pipeline/fetch_nasa.py`, `science/trends.py`, `science/whatif.py` y `app/streamlit_app.py`.
-- Identificar supuestos geográficos y límites actuales.
-- Identificar datos ya descargados y su procedencia.
-- Documentar compatibilidad de los módulos antiguos con Python 3.13.
-- Crear una tabla de componentes: reutilizar, adaptar, reemplazar más adelante.
-- Mantener una ruta de ejecución del prototipo original.
-
-Entregable: informe de auditoría y plan de migración. No reescribir la aplicación en esta fase.
+## Fase 0 — Auditoría y protección
+Inventariar repositorio, Streamlit, pipelines NASA, análisis, tests, datos y dependencias. Probar comandos existentes. Documentar qué se reutiliza/adapta/queda legacy y compatibilidad real. Mantener el prototipo. **Entregable:** `REPOSITORY_AUDIT.md`; no refactor masivo.
 
 ## Fase 1 — Fundaciones reproducibles
-**Objetivo:** entorno de desarrollo y estructura estable.
+Configurar Python/uv, lockfile, calidad, tests, CI, Docker Compose y PostGIS. No reescribir la app. **Entregable:** entorno limpio reproducible.
 
-Tareas:
-- Crear configuración `pyproject.toml`, `.python-version`, `uv.lock`.
-- Crear `.nvmrc`, `package.json`, `package-lock.json` cuando se inicie el frontend.
-- Añadir Ruff, pytest, Vitest, ESLint, Prettier y GitHub Actions.
-- Crear Docker Compose con PostGIS.
-- Crear `.env.example`, `.gitignore` y logging estructurado.
-- Crear migraciones Alembic iniciales.
-- Comprobar arranque reproducible en una máquina limpia.
+## Fase 2 — Catálogo geográfico continental
+Seleccionar límites administrativos y territoriales, construir catálogo de países/territorios, jerarquía y regiones analíticas candidatas. Mantener cuencas/biomas como entidades separadas. Validar CRS, licencias, topología, cobertura y IDs estables. No fijar límites regionales sin fuente. **Entregable:** catálogo continental y endpoint de disponibilidad, aunque la mayoría de regiones aún no tenga datos.
 
-Entregable: `docker compose up --build` inicia servicios y los tests mínimos pasan.
+## Fase 3 — Data Core y piloto histórico
+Validar ERA5 y MERRA-2 con un subconjunto temporal y pocas variables; documentar resolución, unidades y cobertura. Implementar adaptadores idempotentes, QA, Zarr/NetCDF y metadatos. Empezar con Amazonia como piloto recomendado; no limitar el diseño a Amazonia. **Entregable:** ingesta reproducible de temperatura y presión y reporte QA.
 
-## Fase 2 — Geografía amazónica
-**Objetivo:** construir dos máscaras válidas.
+## Fase 4 — Ciencia común
+Implementar climatologías, anomalías, tendencias, Mann-Kendall, Sen, autocorrelación y FDR. Probar en el piloto y luego ejecutar por regiones disponibles. **Entregable:** resultados reproducibles por región/celda con cobertura.
 
-Tareas:
-- Seleccionar y descargar límite de cuenca hidrográfica.
-- Seleccionar el polígono del bioma amazónico.
-- Obtener límites administrativos nacionales.
-- Validar licencias, CRS, validez y cobertura de geometrías.
-- Crear la intersección bioma × país.
-- Publicar metadatos y vista previa.
-- Crear tests de contención, área, geometría y CRS.
-
-Entregable: capa basin y capa biome_country versionadas, documentadas y visibles en mapa.
-
-## Fase 3 — Data Core MERRA-2
-**Objetivo:** descargar y normalizar un dataset acotado de forma reproducible.
-
-Tareas:
-- Implementar adaptador `earthaccess`.
-- Descargar primero un periodo corto y pocas variables.
-- Leer metadatos directamente de archivos.
-- Manejar retries, reanudación, checksums y fill values.
-- Normalizar tiempo, coordenadas, unidades y nombres.
-- Aplicar máscara amazónica.
-- Guardar raw y procesado fuera de Git.
-- Escribir metadatos de procedencia en DB.
-
-Entregable: producto mensual MERRA-2 de temperatura 2m y presión superficial/SLP con grilla y unidad verificadas. Luego ampliar al histórico.
-
-## Fase 4 — Tendencias
-**Objetivo:** análisis estadístico robusto por celda y región.
-
-Tareas:
-- Definir climatología 1991–2020 si la cobertura lo permite.
-- Implementar anomalías mensuales y diarias.
-- Revisar el motor de tendencias actual.
-- Implementar/validar Mann-Kendall estacional, autocorrelación y pendiente de Sen.
-- Implementar FDR en mapas.
-- Exportar resumen por basin, biome_country y grid.
-- Probar con series sintéticas controladas.
-
-Entregable: mapa de tendencia térmica y presión con p/q, pendiente, cobertura y metadatos.
-
-## Fase 5 — Detección de eventos
-**Objetivo:** eventos de presión y calor rastreables.
-
-Tareas:
-- Implementar máxima diaria 2m desde fuente subdiaria.
-- Construir climatología de referencia.
-- Implementar detector de ola de calor con percentil/duración definidos.
-- Implementar anomalías y gradientes de presión.
-- Agrupar regiones afectadas por evento.
-- Seguir centroides/áreas a través del tiempo.
-- Evaluar sensibilidad a umbrales.
-
-Entregable: eventos históricos detectados con definición, duración, intensidad y trayectoria.
+## Fase 5 — Eventos de calor y presión
+Implementar tasmax2m/ola de calor con definición local; anomalías PS/MSL separadas, gradientes, dP/dt y seguimiento. Sensibilidad de umbrales por región. **Entregable:** eventos históricos trazables.
 
 ## Fase 6 — Forecast Core
-**Objetivo:** ofrecer un producto futuro fiable como baseline.
+Integrar NOAA GFS como baseline externo. Procesar inicialmente 24/48/72 h si los productos están disponibles; registrar ciclo, lead, valid_time, resolución y procedencia. Evaluar cobertura regional y coste. **Entregable:** campos reales consultables; indisponibilidad explícita.
 
-Tareas:
-- Implementar adaptador NOAA GFS GRIB2.
-- Leer variables de presión, temperatura y viento.
-- Guardar ciclo, lead, valid_time, resolución y procedencia.
-- Mostrar comparación con análisis/reanálisis cuando sea apropiado.
-- Medir disponibilidad, latencia y cobertura regional.
-- Investigar archivo/hindcast para entrenar ML alineado con el forecast.
+## Fase 7 — Modelos regionales LACI
+No asumir un modelo continental. Seleccionar una región candidata solo si hay hindcasts/datos compatibles. Definir targets, baselines, rolling-origin, holdout espacial, métricas e incertidumbre. Crear un modelo independiente por región; comparar cualquier transferencia/compartición como experimento. Si no hay habilidad, publicar informe negativo y mantener GFS. **Entregable:** primer modelo regional validado o evidencia de que aún no debe publicarse.
 
-Entregable: campos GFS 24/48/72 h consultables y distinguibles de reanálisis.
+## Fase 8 — API, web y expansión regional
+API continental para regiones, disponibilidad, tendencias, eventos, forecasts y registro de modelos. React/MapLibre/Plotly. Expandir ingesta/QA por región priorizada; cada expansión debe aportar geometría, fuentes, cobertura, tests y criterios de aceptación. Mantener Streamlit hasta paridad funcional demostrada. **Entregable:** dashboard que comunica cobertura y madurez de cada región.
 
-## Fase 7 — Modelos ACI
-**Objetivo:** evaluar si un modelo propio agrega valor sobre GFS y baselines.
+## Fase 9 — Endurecimiento y release
+Tests integrados/E2E, seguridad, versionado de datos/modelos, rendimiento y costes por región, documentación y demo. No presentar cobertura continental completa si solo se procesaron regiones piloto.
 
-Tareas:
-- Crear dataset supervisado sin fuga temporal.
-- Definir targets y horizontes.
-- Construir baseline persistencia/climatología.
-- Construir XGBoost de postprocesamiento con entradas de forecast/hindcast compatibles.
-- Realizar validación temporal rolling-origin y holdout espacial.
-- Calcular skill scores por región/horizonte.
-- Publicar modelo solo si supera el baseline acordado.
-- Registrar modelo, versión, features, datos y métricas.
+## Orden regional sugerido (sujeto a datos)
+1. Amazonia (piloto científico).
+2. Andes (dominio de elevación y presión requiere especial cuidado).
+3. Caribe y Centroamérica.
+4. México.
+5. Cono Sur y resto de Sudamérica.
+6. Completar vacíos del Caribe y territorios insulares según datos disponibles.
+El orden puede cambiar por disponibilidad de fuentes, valor científico y validación.
 
-Entregable: predicción experimental calibrada, o informe de que todavía no existe skill suficiente. Ambos son resultados válidos.
-
-## Fase 8 — API, frontend y producto
-**Objetivo:** experiencia integrada y auditable.
-
-Tareas:
-- Implementar FastAPI y esquemas.
-- Implementar consultas y endpoints de mapas.
-- Construir UI React.
-- Visualizar series, trends, events y forecasts.
-- Mostrar fuente, periodo, unidades, forecast cycle y valid time.
-- Mantener temporalmente el prototipo Streamlit.
-- Añadir pruebas end-to-end y documentación de usuario.
-
-Entregable: dashboard funcional y trazable.
-
-## Fase 9 — Release y continuidad
-- Seguridad de secretos y permisos.
-- Documentación de instalación y reproducción.
-- CI estable.
-- Política de versionado de datos/modelos.
-- Evaluación de rendimiento y costes.
-- Despliegue de demo sin prometer disponibilidad permanente de fuentes externas.
-
-## Primer sprint sugerido
-
-1. Auditar el repositorio actual.
-2. Probar versiones de dependencias sobre Python 3.13.
-3. Añadir entorno reproducible sin cambiar la aplicación existente.
-4. Validar el primer producto MERRA-2 con un periodo corto.
-5. Entregar un notebook/reporte de QA del producto antes de generar mapas.
+## Primer sprint
+1. Completar auditoría.
+2. Verificar compatibilidad real de stack.
+3. Proponer catálogo geográfico continental y fuentes/licencias.
+4. Probar un subconjunto de ERA5/MERRA-2 en una sola región.
+5. Entregar reporte QA antes de producir mapas o entrenar modelos.
