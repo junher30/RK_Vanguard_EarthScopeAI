@@ -150,7 +150,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
         <div className="mt-3 rounded-xl border border-line bg-deep/60 p-3 text-xs text-muted">
           <b className="text-ink">Trend map {series.trend.period[0].slice(0, 4)}–{series.trend.period[1].slice(0, 4)}:</b>{" "}
           Sen slope per decade in each 0.5° cell. Bright cells are significant (Mann-Kendall, p &lt; 0.05);
-          faded cells are not. {Math.round(meta.trend_map.share_significant * 100)}% of the area shows a significant
+          faded cells are not. Across the map, {Math.round(meta.trend_map.share_significant * 100)}% of the area shows a significant
           trend ({Math.round(meta.trend_map.share_significant_increase * 100)}% increasing). By chance alone ≈5% would.
         </div>
       )}

@@ -49,7 +49,7 @@ Prioridad: **P0** sin esto no hay entrega · **P1** mejora mucho el demo · **P2
 |---|---|---|---|
 | D1 | Completar los criterios ❓ del [Documento 04](04_REQUERIMIENTOS.md) | | ⏳ |
 | D2 | Aprobar los ajustes al modelo conceptual ([Doc 03 §4.1](03_MODELO_CONCEPTUAL.md)) | | ⏳ |
-| D3 | Completar los resultados globales en [referencia/DATOS_GLOBALES.md §6](referencia/DATOS_GLOBALES.md) | | ⏳ |
+| D3 | Completar los resultados globales en [referencia/DATOS_GLOBALES.md §6](referencia/DATOS_GLOBALES.md) | | ✅ |
 | D4 | Agregar a la declaración de IA cualquier otra herramienta usada (ChatGPT, etc.) | | ⏳ |
 
 ## Orden sugerido

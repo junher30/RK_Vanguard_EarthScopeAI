@@ -1,0 +1,433 @@
+{
+ "region": {
+  "key": "global",
+  "label": "Global (0.5\u00b0 grid)",
+  "lat_min": -90,
+  "lat_max": 90,
+  "lon_min": -180,
+  "lon_max": 180
+ },
+ "generated_by": "export/build_global_data.py",
+ "variables": [
+  {
+   "key": "precip_mm_day",
+   "label": "Precipitation",
+   "short": "Precipitation",
+   "units": "mm/day",
+   "decimals": 2,
+   "dataset": "GPM IMERG Final Monthly V07 (GPM_3IMERGM)",
+   "doi": "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+   "kind": "satellite",
+   "years": [
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "bounds": {
+    "lat_min": -90.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+   },
+   "scale": {
+    "value": {
+     "min": 0.0,
+     "max": 8.554309,
+     "colors": [
+      "#f1f5f9",
+      "#93c5fd",
+      "#3b82f6",
+      "#1d4ed8",
+      "#1e1b4b"
+     ]
+    },
+    "anomaly": {
+     "min": -1.84632,
+     "max": 1.84632,
+     "colors": [
+      "#b45309",
+      "#fbbf24",
+      "#f8fafc",
+      "#60a5fa",
+      "#1d4ed8"
+     ]
+    },
+    "trend": {
+     "min": -0.718822,
+     "max": 0.718822,
+     "colors": [
+      "#b45309",
+      "#fbbf24",
+      "#f8fafc",
+      "#60a5fa",
+      "#1d4ed8"
+     ],
+     "per": "decade"
+    }
+   },
+   "trend_map": {
+    "share_significant": 0.195172,
+    "share_significant_increase": 0.12196
+   },
+   "verdict": "significant increasing trend",
+   "robust": false
+  },
+  {
+   "key": "evi",
+   "label": "Vegetation (EVI)",
+   "short": "Vegetation",
+   "units": "index",
+   "decimals": 3,
+   "dataset": "MODIS/Terra Vegetation Indices Monthly 0.05deg CMG v6.1 (MOD13C2)",
+   "doi": "https://doi.org/10.5067/MODIS/MOD13C2.061",
+   "kind": "satellite",
+   "years": [
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "bounds": {
+    "lat_min": -90.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+   },
+   "scale": {
+    "value": {
+     "min": -0.007128,
+     "max": 0.533177,
+     "colors": [
+      "#a16207",
+      "#d9b36c",
+      "#86efac",
+      "#22c55e",
+      "#14532d"
+     ]
+    },
+    "anomaly": {
+     "min": -0.038879,
+     "max": 0.038879,
+     "colors": [
+      "#92400e",
+      "#f59e0b",
+      "#f8fafc",
+      "#4ade80",
+      "#166534"
+     ]
+    },
+    "trend": {
+     "min": -0.029814,
+     "max": 0.029814,
+     "colors": [
+      "#92400e",
+      "#f59e0b",
+      "#f8fafc",
+      "#4ade80",
+      "#166534"
+     ],
+     "per": "decade"
+    }
+   },
+   "trend_map": {
+    "share_significant": 0.456106,
+    "share_significant_increase": 0.424128
+   },
+   "verdict": "significant increasing trend",
+   "robust": true
+  },
+  {
+   "key": "lst_day_c",
+   "label": "Land surface temperature (day)",
+   "short": "Surface temp.",
+   "units": "\u00b0C",
+   "decimals": 2,
+   "dataset": "MODIS/Terra Land Surface Temperature Monthly 0.05deg CMG v6.1 (MOD11C3)",
+   "doi": "https://doi.org/10.5067/MODIS/MOD11C3.061",
+   "kind": "satellite",
+   "years": [
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "bounds": {
+    "lat_min": -90.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+   },
+   "scale": {
+    "value": {
+     "min": -54.716494,
+     "max": 40.680522,
+     "colors": [
+      "#1e3a8a",
+      "#38bdf8",
+      "#fde047",
+      "#f97316",
+      "#7f1d1d"
+     ]
+    },
+    "anomaly": {
+     "min": -2.610954,
+     "max": 2.610954,
+     "colors": [
+      "#1d4ed8",
+      "#93c5fd",
+      "#f8fafc",
+      "#f87171",
+      "#991b1b"
+     ]
+    },
+    "trend": {
+     "min": -1.206947,
+     "max": 1.206947,
+     "colors": [
+      "#1d4ed8",
+      "#93c5fd",
+      "#f8fafc",
+      "#f87171",
+      "#991b1b"
+     ],
+     "per": "decade"
+    }
+   },
+   "trend_map": {
+    "share_significant": 0.188949,
+    "share_significant_increase": 0.131688
+   },
+   "verdict": "no statistically significant trend",
+   "robust": false
+  },
+  {
+   "key": "t2m_c",
+   "label": "Air temperature (2 m)",
+   "short": "Air temp.",
+   "units": "\u00b0C",
+   "decimals": 2,
+   "dataset": "MERRA-2 tavgM_2d_slv_Nx (M2TMNXSLV) v5.12.4",
+   "doi": "https://doi.org/10.5067/AP1B0BA5PD2K",
+   "kind": "reanalysis",
+   "years": [
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "bounds": {
+    "lat_min": -90.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+   },
+   "scale": {
+    "value": {
+     "min": -49.725567,
+     "max": 28.223642,
+     "colors": [
+      "#1e3a8a",
+      "#38bdf8",
+      "#fde047",
+      "#f97316",
+      "#7f1d1d"
+     ]
+    },
+    "anomaly": {
+     "min": -1.922959,
+     "max": 1.922959,
+     "colors": [
+      "#1d4ed8",
+      "#93c5fd",
+      "#f8fafc",
+      "#f87171",
+      "#991b1b"
+     ]
+    },
+    "trend": {
+     "min": -1.040974,
+     "max": 1.040974,
+     "colors": [
+      "#1d4ed8",
+      "#93c5fd",
+      "#f8fafc",
+      "#f87171",
+      "#991b1b"
+     ],
+     "per": "decade"
+    }
+   },
+   "trend_map": {
+    "share_significant": 0.418178,
+    "share_significant_increase": 0.389078
+   },
+   "verdict": "significant increasing trend",
+   "robust": false
+  },
+  {
+   "key": "rh2m_pct",
+   "label": "Relative humidity (2 m)",
+   "short": "Humidity",
+   "units": "%",
+   "decimals": 1,
+   "dataset": "MERRA-2 tavgM_2d_slv_Nx (M2TMNXSLV) v5.12.4",
+   "doi": "https://doi.org/10.5067/AP1B0BA5PD2K",
+   "kind": "reanalysis",
+   "years": [
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "bounds": {
+    "lat_min": -90.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+   },
+   "scale": {
+    "value": {
+     "min": 32.289154,
+     "max": 93.66922,
+     "colors": [
+      "#7c2d12",
+      "#f59e0b",
+      "#fef3c7",
+      "#5eead4",
+      "#0f766e"
+     ]
+    },
+    "anomaly": {
+     "min": -5.314926,
+     "max": 5.314926,
+     "colors": [
+      "#9a3412",
+      "#fdba74",
+      "#f8fafc",
+      "#5eead4",
+      "#0f766e"
+     ]
+    },
+    "trend": {
+     "min": -3.588021,
+     "max": 3.588021,
+     "colors": [
+      "#9a3412",
+      "#fdba74",
+      "#f8fafc",
+      "#5eead4",
+      "#0f766e"
+     ],
+     "per": "decade"
+    }
+   },
+   "trend_map": {
+    "share_significant": 0.383112,
+    "share_significant_increase": 0.306627
+   },
+   "verdict": "significant increasing trend",
+   "robust": true
+  }
+ ]
+}

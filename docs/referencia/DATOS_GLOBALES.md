@@ -90,9 +90,30 @@ Esto resuelve la **decisión D11** (Documento 01, §14) con la opción B: la cie
 npm --prefix web run dev                          # web (http://localhost:3000)
 ```
 
-## 6. Resultados
+## 6. Resultados (2001–2024, descarga completa: 4 × 288 meses, sin fallos)
 
-_Se completan al terminar la exportación (§ siguiente versión)._
+### 6.1. Serie global (media ponderada por área)
+
+| Variable | Veredicto (α = 0,05) | Pendiente de Sen | Robustez | % del área con tendencia significativa por celda |
+|---|---|---|---|---|
+| Precipitación (IMERG) | Creciente significativa (p = 0,026) | +0,030 mm/día por década | ⚠️ **No robusta**: sin 2023–2024, p = 0,094 | 20 % |
+| Vegetación EVI (MODIS, tierra) | Creciente significativa (p < 0,001) | +0,006 por década | ✅ Robusta | **46 %** (reverdecimiento) |
+| Temperatura de superficie diurna (MODIS, tierra) | Sin tendencia significativa (p = 0,18) | +0,11 °C por década | ⚠️ No robusta: sin 2023–2024 sí es significativa (p = 0,005) | 19 % |
+| Temperatura del aire a 2 m (MERRA-2) | Creciente significativa (p = 0,005) | **+0,145 °C por década** | ⚠️ No robusta: sin 2023–2024, p = 0,053 | **42 %** |
+| Humedad relativa a 2 m (MERRA-2) | Creciente significativa (p < 0,001) | +0,33 puntos % por década | ✅ Robusta | 38 % |
+
+### 6.2. Lo que muestran los mapas de tendencia
+- **Temperatura del aire:** calentamiento casi general, más fuerte en el Ártico. Hay enfriamiento en partes del océano Austral.
+- **Vegetación:** reverdecimiento extendido, sobre todo en China, India y Europa; hay zonas de pérdida dispersas.
+- **Precipitación:** patrones regionales mezclados, con más señal sobre el océano que sobre la tierra.
+
+### 6.3. Ejemplo de análisis de área (API): península ibérica (416 celdas)
+Temperatura del aire **+0,58 °C por década** (significativa y robusta), EVI en aumento, y lluvia y humedad sin tendencia significativa.
+
+### 6.4. Cautelas
+- Que una tendencia sea "no robusta" significa que depende de los últimos años (2023–2024 fueron récord de calor). Se reporta así, sin exagerar.
+- La humedad relativa y la temperatura del aire vienen de un **reanálisis**: son coherentes y continuas, pero no son mediciones directas.
+- El aumento global de humedad relativa en MERRA-2 debe contrastarse con otras fuentes (por ejemplo AIRS) antes de usarlo como conclusión.
 
 ## 7. Próximos usos
 
