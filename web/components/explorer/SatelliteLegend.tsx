@@ -38,8 +38,8 @@ export default function SatelliteLegend({
       className="holo-panel absolute bottom-[92px] left-4 z-20 hidden w-[270px] p-3 text-xs lg:block"
     >
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2 text-left">
-        <Satellite className="size-3.5 text-cyan" />
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan">
+        <Satellite className="size-3.5 text-signal" />
+        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-signal">
           {t("Satélites · quién mide qué", "Satellites · who measures what")}
         </span>
         <ChevronDown className={`ml-auto size-3.5 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
@@ -99,7 +99,7 @@ export default function SatelliteLegend({
                   type="checkbox"
                   checked={filter.onlyLayer}
                   onChange={(e) => onChange({ ...filter, onlyLayer: e.target.checked })}
-                  className="mt-0.5 accent-cyan"
+                  className="mt-0.5 accent-signal"
                 />
                 <span>
                   {t("Solo los que miden", "Only those behind")} <b className="text-ink">{layerLabel ?? varShort(layer, layer)}</b>

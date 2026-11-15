@@ -51,7 +51,7 @@ export default function AreaPanel({ draw, area, stats, onClose, onUndo, onCancel
 
   return (
     <div>
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan">
+      <div className="flex items-center gap-2 text-xs font-semibold tracking-normal text-signal">
         <Hexagon className="size-4" /> {t("Paso 1 · Área de estudio", "Step 1 · Study area")}
       </div>
       <h2 className="mt-3 text-lg font-semibold">
@@ -71,7 +71,7 @@ export default function AreaPanel({ draw, area, stats, onClose, onUndo, onCancel
         {stats && stats.areaKm2 > 0 && (
           <Row
             k={t("Datos NASA", "NASA data")}
-            v={<span className="rounded-full bg-cyan/15 px-2.5 py-0.5 text-xs font-semibold text-cyan">Global 0.5° · 2001–2024</span>}
+            v={<span className="rounded-[2px] bg-signal/15 px-2 py-0.5 text-xs font-semibold text-signal">Global 0.5° · 2001–2024</span>}
           />
         )}
         {stats?.crossesAntimeridian && <Row k={t("Antimeridiano", "Antimeridian")} v={<span className="text-xs text-muted">{t("cruza ±180°", "crosses ±180°")}</span>} />}
@@ -91,7 +91,7 @@ export default function AreaPanel({ draw, area, stats, onClose, onUndo, onCancel
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-3 space-y-1 overflow-hidden rounded-xl border border-red/40 bg-red/10 p-3 text-xs text-red"
+            className="mt-3 space-y-1 overflow-hidden rounded-[3px] border border-red/40 bg-red/10 p-3 text-xs text-red"
             role="alert"
           >
             {stats.issues.map((i) => (

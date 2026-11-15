@@ -49,7 +49,7 @@ export default function CallBar() {
           <div className="flex items-center gap-4">
             <Orb phase={s.phase} level={s.level} />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan">
+              <div className="flex items-center gap-2 font-mono text-[10px] tracking-normal text-signal">
                 <span className="size-1.5 animate-pulse rounded-full bg-red-400" /> {t("Llamada en vivo", "Live call")}
                 <span className="text-muted">· {s.muted ? t("Silenciado", "Muted") : label(s.phase, t)}</span>
               </div>
@@ -79,36 +79,34 @@ export default function CallBar() {
   );
 }
 
-// esfera que respira con tu voz y gira cuando la IA piensa o habla
+// medidor de nivel: barras que siguen tu voz; cuando la IA habla, se mueven solas
+const BARS = [0.35, 0.6, 0.85, 1, 0.75, 0.5, 0.9, 0.65, 0.4, 0.7, 0.55, 0.3];
 function Orb({ phase, level }: { phase: CallPhase; level: number }) {
-  const k = phase === "hearing" || phase === "listening" ? 1 + level * 0.6 : 1;
-  const hot = phase === "speaking" || phase === "thinking";
+  const talking = phase === "speaking";
+  const live = phase === "hearing" || phase === "listening";
   return (
-    <div className="relative grid size-14 shrink-0 place-items-center">
-      <span
-        className={`absolute inset-0 rounded-full border border-cyan/50 ${hot ? "animate-spin [animation-duration:2.5s] border-t-cyan border-r-transparent" : ""}`}
-      />
-      <span
-        className="size-9 rounded-full transition-transform duration-75"
-        style={{
-          transform: `scale(${k})`,
-          background: phase === "speaking"
-            ? "radial-gradient(circle at 35% 35%, #a5f3fc, #22d3ee 45%, #0e7490)"
-            : "radial-gradient(circle at 35% 35%, #67e8f9, #0891b2 55%, #082f49)",
-          boxShadow: `0 0 ${12 + level * 30}px rgba(34,211,238,${0.4 + level * 0.5})`,
-          animation: phase === "speaking" ? "call-speak 0.6s ease-in-out infinite alternate" : undefined,
-        }}
-      />
+    <div className="flex h-12 w-24 shrink-0 items-center gap-[3px] border border-line px-2" aria-hidden>
+      {BARS.map((k, i) => (
+        <span
+          key={i}
+          className={`w-[3px] ${talking ? "animate-[call-bar_0.7s_ease-in-out_infinite_alternate]" : ""} ${talking ? "bg-ink" : "bg-signal"}`}
+          style={{
+            height: `${Math.max(8, (live ? level * k * 100 : talking ? k * 70 : 8))}%`,
+            animationDelay: `${i * 60}ms`,
+            opacity: phase === "thinking" ? 0.35 : 1,
+          }}
+        />
+      ))}
     </div>
   );
 }
 
 function Dots() {
   return (
-    <span className="inline-flex gap-1 text-cyan">
-      <span className="think-pip size-1.5 rounded-full bg-cyan" />
-      <span className="think-pip size-1.5 rounded-full bg-cyan [animation-delay:.2s]" />
-      <span className="think-pip size-1.5 rounded-full bg-cyan [animation-delay:.4s]" />
+    <span className="inline-flex gap-1 text-signal">
+      <span className="think-pip size-1.5 rounded-full bg-signal" />
+      <span className="think-pip size-1.5 rounded-full bg-signal [animation-delay:.2s]" />
+      <span className="think-pip size-1.5 rounded-full bg-signal [animation-delay:.4s]" />
     </span>
   );
 }

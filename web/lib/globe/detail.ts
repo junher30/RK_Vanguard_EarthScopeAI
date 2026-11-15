@@ -46,8 +46,8 @@ function pick(kind: "day" | "night") {
 export type Detail = { obj: SlippyMap; setImagery: (k: "day" | "night") => void };
 
 // capa de detalle sobre el globo base; si GIBS no responde, no se muestra y queda la textura base
-export function createDetail(radius: number, minLevel = 2): Detail {
-  const obj = new SlippyMap(radius, { minLevel, maxLevel: MAX_LEVEL, mercatorProjection: true });
+export function createDetail(radius: number, minLevel = 2, maxLevel = MAX_LEVEL): Detail {
+  const obj = new SlippyMap(radius, { minLevel, maxLevel, mercatorProjection: true });
   let want: "day" | "night" = "day";
   const setImagery = (k: "day" | "night") => {
     want = k;

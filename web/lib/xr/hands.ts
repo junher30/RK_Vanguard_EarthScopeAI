@@ -10,7 +10,7 @@ const glove = new THREE.MeshPhysicalMaterial({
   roughness: 0.6,
   metalness: 0.1,
   sheen: 1,
-  sheenColor: new THREE.Color(0x22d3ee),
+  sheenColor: new THREE.Color(0x9aa4ae),
   sheenRoughness: 0.45,
   emissive: new THREE.Color(0x061420),
 });

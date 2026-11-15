@@ -97,8 +97,8 @@ function Bubble() {
           role="dialog"
           aria-label={t("Recorrido guiado", "Guided tour")}
         >
-          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan">
-            <span className="size-1.5 animate-pulse rounded-full bg-cyan" />
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-normal text-signal">
+            <span className="size-1.5 animate-pulse rounded-full bg-signal" />
             {t("Briefing de misión", "Mission briefing")}
             <span className="ml-auto text-muted">{String(i + 1).padStart(2, "0")}/{String(STEPS.length).padStart(2, "0")}</span>
           </div>
@@ -117,7 +117,7 @@ function Bubble() {
           <div className="mt-4 flex items-center gap-2">
             <div className="mr-auto flex gap-1" aria-hidden>
               {STEPS.map((_, j) => (
-                <span key={j} className={`h-1.5 rounded-full transition-all ${j === i ? "w-4 bg-cyan" : "w-1.5 bg-white/25"}`} />
+                <span key={j} className={`h-1.5 rounded-full transition-all ${j === i ? "w-4 bg-signal" : "w-1.5 bg-white/25"}`} />
               ))}
             </div>
             {!last && (
@@ -134,8 +134,8 @@ function Bubble() {
               {last ? t("Iniciar misión", "Start mission") : t("Siguiente", "Next")}
             </button>
           </div>
-          {/* línea hacia el botón del asistente */}
-          <span className="absolute -bottom-6 right-12 hidden h-6 w-px bg-gradient-to-b from-cyan to-transparent lg:block" />
+          {/* línea hacia el holograma */}
+          <span className="absolute -bottom-6 right-12 hidden h-6 w-px bg-gradient-to-b from-signal to-transparent lg:block" />
         </motion.div>
   );
 }

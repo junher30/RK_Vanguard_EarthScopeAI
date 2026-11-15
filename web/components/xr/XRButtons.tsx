@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Glasses, Box } from "lucide-react";
 import type { XRMode } from "@/lib/xr/world";
 import { useT } from "@/lib/i18n";
+import { useXRState } from "@/lib/xr/state";
 
 type Support = { vr: boolean; ar: boolean; headset: boolean };
 
@@ -31,11 +32,19 @@ export default function XRButtons({ big = false }: { big?: boolean }) {
     try {
       const { requestXR, startXR } = await import("@/lib/xr/world");
       const session = await requestXR(mode);
-      session.addEventListener("end", () => { stop.current?.(); stop.current = null; setBusy(false); });
+      // el globo de la página se desmonta mientras estás dentro: la memoria queda para la VR
+      useXRState.setState({ active: true });
+      session.addEventListener("end", () => {
+        stop.current?.();
+        stop.current = null;
+        setBusy(false);
+        useXRState.setState({ active: false });
+      });
       stop.current = await startXR(session, mode);
     } catch (e) {
       setErr((e as Error).message);
       setBusy(false);
+      useXRState.setState({ active: false });
     }
   };
 
