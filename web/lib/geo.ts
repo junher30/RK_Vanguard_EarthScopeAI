@@ -1,11 +1,15 @@
+// Geometry of the visitor's study area (Documento 01 §7.4–7.7). Pure functions, no science:
+// validation, area, centroid and data-coverage of a polygon drawn on the globe.
+
 export type LatLng = { lat: number; lng: number };
 
-const R = 6371.0088;
+const R = 6371.0088; // mean Earth radius, km
 const rad = (d: number) => (d * Math.PI) / 180;
-const HALF_HEMISPHERE_KM2 = Math.PI * R * R;
+const HALF_HEMISPHERE_KM2 = Math.PI * R * R; // 2πR² / 2
 
 export const normLng = (l: number) => ((((l + 180) % 360) + 360) % 360) - 180;
 
+/** Unwrap longitudes so consecutive vertices never jump more than 180° (antimeridian). */
 export function unwrap(vs: LatLng[]): LatLng[] {
   const out: LatLng[] = [];
   vs.forEach((v, i) => {
@@ -19,11 +23,13 @@ export function unwrap(vs: LatLng[]): LatLng[] {
   return out;
 }
 
+/** Great-circle midpoint is overkill at these scales; midpoint in unwrapped lat/lng. */
 export function midpoint(a: LatLng, b: LatLng): LatLng {
   const [ua, ub] = unwrap([a, b]);
   return { lat: (ua.lat + ub.lat) / 2, lng: normLng((ua.lng + ub.lng) / 2) };
 }
 
+/** Spherical polygon area (km²) of an open ring, using unwrapped longitudes. */
 export function areaKm2(vs: LatLng[]): number {
   if (vs.length < 3) return 0;
   const u = unwrap(vs);
@@ -32,6 +38,7 @@ export function areaKm2(vs: LatLng[]): number {
     const a = u[i];
     let b = u[(i + 1) % u.length];
     if (i === u.length - 1) {
+      // closing edge: unwrap relative to the last vertex
       let l = b.lng;
       while (l - a.lng > 180) l -= 360;
       while (l - a.lng < -180) l += 360;
@@ -42,6 +49,7 @@ export function areaKm2(vs: LatLng[]): number {
   return Math.abs((s * R * R) / 2);
 }
 
+/** Net longitude travelled around the closed ring: ±360 means the ring encircles a pole. */
 function lngWinding(vs: LatLng[]): number {
   let t = 0;
   for (let i = 0; i < vs.length; i++) {
@@ -59,6 +67,7 @@ function segmentsCross(p1: LatLng, p2: LatLng, p3: LatLng, p4: LatLng) {
   return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
 }
 
+/** Ring in unwrapped coordinates, closing edge included consistently. */
 function ring(vs: LatLng[]): LatLng[] {
   const u = unwrap(vs);
   const last = u[u.length - 1];
@@ -73,13 +82,14 @@ export function selfIntersects(vs: LatLng[]): boolean {
   const n = vs.length;
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
-      if (j === i + 1 || (i === 0 && j === n - 1)) continue;
+      if (j === i + 1 || (i === 0 && j === n - 1)) continue; // adjacent edges
       if (segmentsCross(r[i], r[i + 1], r[j], r[j + 1])) return true;
     }
   }
   return false;
 }
 
+/** Shoelace area in degrees² on unwrapped coordinates (detects aligned points). */
 function planarArea(vs: LatLng[]): number {
   const r = ring(vs);
   let s = 0;
@@ -89,6 +99,7 @@ function planarArea(vs: LatLng[]): number {
 
 export type Issue = { code: string; message: string };
 
+/** Validation rules V-01…V-06 (Documento 01 §7.6), plus pole-encircling rings. */
 export function validate(vs: LatLng[]): Issue[] {
   const issues: Issue[] = [];
   const distinct = vs.filter(
@@ -122,6 +133,7 @@ export function centroid(vs: LatLng[]): LatLng {
   return { lat, lng: normLng(lng) };
 }
 
+/** Even-odd point-in-polygon on unwrapped coordinates. */
 export function contains(vs: LatLng[], p: LatLng): boolean {
   const u = unwrap(vs);
   const lngs = u.map((v) => v.lng);
@@ -140,6 +152,10 @@ export function contains(vs: LatLng[], p: LatLng): boolean {
 
 export type Box = { latMin: number; latMax: number; lonMin: number; lonMax: number };
 
+/**
+ * Share of the polygon covered by a processed-data region, counting the 0.1° grid cells
+ * (the same grid as data/grids/) whose centres fall inside the polygon.
+ */
 export function coverage(vs: LatLng[], box: Box, step = 0.1) {
   const polyArea = areaKm2(vs);
   let cells = 0;
@@ -156,6 +172,7 @@ export function coverage(vs: LatLng[], box: Box, step = 0.1) {
   return { cells, fraction: polyArea > 0 ? Math.min(1, covered / polyArea) : 0 };
 }
 
+/** GeoJSON Feature (RFC 7946: [lon, lat], closed ring, counter-clockwise exterior). */
 export function toFeature(vs: LatLng[], properties: Record<string, unknown>) {
   const u = unwrap(vs);
   let signed = 0;
@@ -163,7 +180,7 @@ export function toFeature(vs: LatLng[], properties: Record<string, unknown>) {
     const a = u[i], b = u[(i + 1) % u.length];
     signed += (b.lng - a.lng) * (b.lat + a.lat);
   }
-  const ordered = signed > 0 ? [...vs].reverse() : vs;
+  const ordered = signed > 0 ? [...vs].reverse() : vs; // signed > 0 → clockwise
   const coords = ordered.map((v) => [+normLng(v.lng).toFixed(5), +v.lat.toFixed(5)]);
   return {
     type: "Feature" as const,
