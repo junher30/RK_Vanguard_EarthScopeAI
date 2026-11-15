@@ -20,3 +20,14 @@ Al crear una HU como issue, agrega aquí su enlace.
 | HU-13 | Botón "Reintentar" ante fallos | Frontend | Should | 1 | RF-19 | ⏳ Backlog | |
 | HU-14 | Seleccionar mes (resolución mensual) | Ambos | Could | 5 | RF-11 | ⏳ Backlog | |
 | HU-15 | Descargar informe reproducible del área | Ambos | Could | 5 | RF-20 | ⏳ Backlog | |
+
+## EarthScope IA (rama de korhan6, integrada en `feat/HU-16-earthscope-ia` del Backend)
+
+| HU | Título | Repo | Prioridad | Pts | Estado | Notas |
+|---|---|---|---|---|---|---|
+| HU-16 | Asistente de IA (chat) que responde con la ciencia del backend y mueve el globo | Ambos | Should | 8 | 🟡 Backend ✅ · Frontend ⏳ | `/api/v1/agent/chat`. Falta el panel de chat en la web, que no está en el repo Frontend |
+| HU-17 | Consultar al asistente por voz | Ambos | Could | 3 | 🟡 Backend ✅ · Frontend ⏳ | `/api/v1/agent/voice` (ElevenLabs o Gemini) |
+| HU-18 | Proyección experimental 2025–2030 con red neuronal | Ambos | Could | 8 | 🟡 Backend ✅ (marcada experimental) | Falta validar la habilidad por horizonte (1–12 meses) antes de llamarla pronóstico; la capa web está pendiente |
+| HU-19 | Eventos naturales activos (NASA EONET) en el globo | Ambos | Should | 3 | 🟡 Backend ✅ · Frontend ⏳ | `/api/v1/events` |
+| HU-20 | Satélites NASA en vivo (TLE CelesTrak) | Ambos | Could | 3 | 🟡 Backend ✅ · Frontend ⏳ | `/api/v1/satellites` |
+| HU-21 | Imagen Docker del Backend | Backend | Should | 2 | ✅ (sin probar el build en local) | `Dockerfile`, `docker-compose.yml` |
