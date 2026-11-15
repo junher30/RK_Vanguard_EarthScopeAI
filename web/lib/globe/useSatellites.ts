@@ -45,7 +45,10 @@ export function satMesh(color: string, size = 1) {
   return grp;
 }
 
-export function useSatellites(show: boolean, selected: number | null) {
+// visible: filtro de la leyenda (por rol o "solo fuentes de la capa activa")
+export function useSatellites(show: boolean, selected: number | null, visible?: (s: Sat) => boolean) {
+  const visibleRef = useRef(visible);
+  useEffect(() => { visibleRef.current = visible; }, [visible]);
   const [sats, setSats] = useState<Sat[]>([]);
   const objs = useRef(new Map<number, SatObj>());
   const [tick, setTick] = useState(0);
@@ -75,13 +78,14 @@ export function useSatellites(show: boolean, selected: number | null) {
         o.alt = altToRadius(p.altKm);
       }
       // los mismos objetos en un arreglo nuevo: el globo los mueve sin recrearlos
-      setList([...objs.current.values()]);
+      const vis = visibleRef.current;
+      setList([...objs.current.values()].filter((o) => !vis || vis(o.sat) || o.sat.norad === selected));
       setTick((t) => t + 1);
     };
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [show, sats]);
+  }, [show, sats, selected]);
 
 
   const selSat = sats.find((s) => s.norad === selected) ?? null;

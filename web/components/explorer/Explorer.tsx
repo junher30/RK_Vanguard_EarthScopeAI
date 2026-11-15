@@ -21,7 +21,8 @@ import CallBar, { CallButton } from "@/components/chat/CallBar";
 import Tutorial from "@/components/chat/Tutorial";
 import XRButtons from "@/components/xr/XRButtons";
 import SatelliteCard from "./SatelliteCard";
-import { satPosition, type Sat } from "@/lib/satellites";
+import SatelliteLegend, { DEFAULT_SAT_FILTER, type SatFilter } from "./SatelliteLegend";
+import { LAYER_PRODUCT, loadSatellites, satPosition, type Sat } from "@/lib/satellites";
 import { useAssistant } from "@/lib/assistant";
 import { setActionRunner, type AgentAction } from "@/lib/agentActions";
 import { LangToggle, initLang, tr, useT, varShort } from "@/lib/i18n";
@@ -50,6 +51,7 @@ export default function Explorer() {
   const [showSats, setShowSats] = useState(true);
   const [sat, setSat] = useState<Sat | null>(null);
   const [follow, setFollow] = useState(false);
+  const [satFilter, setSatFilter] = useState<SatFilter>(DEFAULT_SAT_FILTER);
   const ev = useEvents();
   const storyOn = useStory((st) => !!st.story);
   useEffect(() => useStory.subscribe((st, prev) => { if (st.story && !prev.story) setIntro(false); }), []);
@@ -86,6 +88,26 @@ export default function Explorer() {
   }, [scope]);
 
   const layerMeta = manifest?.variables.find((v) => v.key === variable) ?? null;
+
+  // qué satélites se dibujan: filtros por rol de la leyenda y "solo las fuentes de la capa activa"
+  const satVisible = useCallback((s: Sat) => {
+    if (!satFilter.roles[s.role]) return false;
+    if (satFilter.onlyLayer && variable) {
+      const p = LAYER_PRODUCT[variable];
+      return !!p && s.products.includes(p);
+    }
+    return true;
+  }, [satFilter, variable]);
+  const pickSatellite = useCallback((norad: number) => {
+    loadSatellites().then((list) => {
+      const s = list.find((x) => x.norad === norad);
+      if (!s) return;
+      setSat(s); setFollow(false); setIntro(false);
+      api.current?.setSpin(false); setSpinning(false);
+      const p = satPosition(s);
+      if (p) api.current?.flyTo(p.lat, p.lng, 2.2);
+    });
+  }, []);
 
   useEffect(() => {
     if (!manifest) return;
@@ -360,6 +382,7 @@ export default function Explorer() {
           onReady={onReady}
           onBordersError={onBordersError}
           showSats={showSats}
+          satVisible={satVisible}
           selectedSat={sat?.norad ?? null}
           events={ev.on ? ev.events : undefined}
           onEvent={(e) => { setEvent(e); setSat(null); setIntro(false); api.current?.setSpin(false); setSpinning(false); api.current?.flyTo(e.lat, e.lng, 1.3); }}
@@ -656,6 +679,16 @@ export default function Explorer() {
           <CircleHelp className="size-5" />
         </IconBtn>
       </motion.div>
+
+      {showSats && !intro && !storyOn && (
+        <SatelliteLegend
+          filter={satFilter}
+          onChange={setSatFilter}
+          layer={variable}
+          layerLabel={layerMeta ? varShort(layerMeta.key, layerMeta.short) : null}
+          onPick={pickSatellite}
+        />
+      )}
 
       <AnimatePresence>
         {sat && showSats && (

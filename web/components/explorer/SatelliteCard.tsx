@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Crosshair, Layers, Satellite, X } from "lucide-react";
-import { satPosition, type Sat } from "@/lib/satellites";
+import { PRODUCT_INFO, ROLE_STYLE, satPosition, type Sat } from "@/lib/satellites";
 import { useLang } from "@/lib/i18n";
 
 const LAYER_NAMES: Record<string, [string, string]> = {
@@ -68,7 +68,23 @@ export default function SatelliteCard({
           </div>
         </dl>
       )}
-      <p className="mt-3 text-sm leading-relaxed">{t(sat.es, sat.en)}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="rounded-full px-2 py-0.5 font-semibold" style={{ background: `${sat.color}22`, color: sat.color }}>
+          {t(ROLE_STYLE[sat.role].es, ROLE_STYLE[sat.role].en)}
+        </span>
+        <span className="text-muted">{sat.agency} · {sat.instrument}{sat.geo ? ` · ${t("geoestacionario", "geostationary")}` : ""}</span>
+      </div>
+      <p className="mt-2 text-sm leading-relaxed">{t(sat.es, sat.en)}</p>
+      {sat.products.length > 0 && (
+        <div className="mt-3 rounded-lg border border-line/70 bg-white/5 p-2 text-xs">
+          <span className="text-muted">{t("Alimenta en esta web:", "Feeds on this site:")}</span>
+          <ul className="mt-1 space-y-0.5">
+            {sat.products.map((p) => (
+              <li key={p}><b style={{ color: sat.color }}>{PRODUCT_INFO[p].name}</b> → {t(PRODUCT_INFO[p].es, PRODUCT_INFO[p].en)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         <button onClick={onFollow} className={following ? "btn-primary !py-1.5 text-xs" : "btn !py-1.5 text-xs"}>
           <Crosshair className="size-3.5" /> {following ? t("Siguiendo", "Following") : t("Seguir", "Follow")}

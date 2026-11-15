@@ -114,6 +114,7 @@ type Props = {
   onReady: (api: GlobeApi) => void;
   onBordersError?: () => void;
   showSats?: boolean;
+  satVisible?: (s: Sat) => boolean;
   events?: GeoEvent[];
   onEvent?: (e: GeoEvent) => void;
   selectedSat?: number | null;
@@ -135,11 +136,11 @@ const angle = (a: LatLng, b: LatLng) => {
 
 export default function EarthGlobe({
   selection, overlay, imagery, draw, drawValid, area, onSelect, onVertex, onReady, onBordersError,
-  showSats = false, selectedSat = null, onSatellite, events = [], onEvent,
+  showSats = false, satVisible, selectedSat = null, onSatellite, events = [], onEvent,
 }: Props) {
   const evClick = useRef(onEvent);
   useEffect(() => { evClick.current = onEvent; }, [onEvent]);
-  const sats = useSatellites(showSats, selectedSat);
+  const sats = useSatellites(showSats, selectedSat, satVisible);
   const satClick = useRef(onSatellite);
   // accesores estables: si cambian en cada render, el globo recrea etiquetas y satélites cada segundo
   const htmlEl = useCallback((d: object) => {
@@ -168,7 +169,11 @@ export default function EarthGlobe({
     return el;
   }, []);
   const satObj = useCallback(
-    (d: object) => satMesh((d as SatObj).color, (d as SatObj).sat.norad === 25544 ? 2.4 : 1.8),
+    (d: object) => {
+      const o = d as SatObj;
+      const size = o.sat.norad === 25544 ? 2.4 : o.sat.role === "direct" || o.sat.role === "calibration" ? 2.3 : o.sat.role === "other" ? 1.4 : 1.8;
+      return satMesh(o.color, size);
+    },
     [],
   );
   useEffect(() => { satClick.current = onSatellite; }, [onSatellite]);
