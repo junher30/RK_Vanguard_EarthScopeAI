@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+@theme {
+  --color-space: #030814;
+  --color-deep: #06101f;
+  --color-panel: #0b1a2e;
+  --color-line: #1e3a5f;
+  --color-ink: #e2e8f0;
+  --color-muted: #94a3b8;
+  --color-cyan: #22d3ee;
+  --color-green: #34d399;
+  --color-blue: #3b82f6;
+  --color-amber: #fbbf24;
+  --color-red: #f87171;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-space);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .glass {
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    background: rgba(10, 24, 44, 0.66);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    background: var(--color-panel);
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, transform 0.15s;
+  }
+  .btn:hover {
+    border-color: var(--color-cyan);
+    color: var(--color-cyan);
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    background: var(--color-cyan);
+    color: #03121f;
+    padding: 0.6rem 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 34px rgba(34, 211, 238, 0.6);
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+}
+
+.globe-tip {
+  padding: 4px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  font: 500 12px var(--font-sans);
+}
+
+.globe-region-label {
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  border-radius: 999px;
+  background: rgba(3, 18, 31, 0.75);
+  color: var(--color-cyan);
+  font: 600 11px var(--font-sans);
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.timeline {
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.6), rgba(30, 58, 95, 0.9));
+  cursor: pointer;
+}
+.timeline::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  border: 2px solid #03121f;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+}
+.timeline::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  border: 2px solid #03121f;
+}
+
+/* indicador "pensando" del asistente */
+@keyframes think-pip {
+  0%, 100% { transform: translateY(0); opacity: .4; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+.think-pip { animation: think-pip .9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .think-pip { animation: none; }
+}
+
+/* etiqueta de satélite en el globo */
+.globe-sat-label {
+  transform: translate(-50%, -140%);
+  pointer-events: auto;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--sat) 60%, transparent);
+  background: rgba(3, 10, 24, 0.7);
+  color: var(--sat);
+  font: 600 10px var(--font-sans);
+  letter-spacing: 0.03em;
+}
+.globe-sat-label:hover { background: color-mix(in srgb, var(--sat) 25%, rgba(3, 10, 24, 0.85)); }
+
+/* paneles con estilo holográfico */
+.holo-chip {
+  border: 1px solid rgba(34, 211, 238, 0.5);
+  border-radius: 6px;
+  background: rgba(3, 12, 26, 0.85);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.3);
+}
+.holo-panel {
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.08), rgba(34, 211, 238, 0) 40%),
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
+    rgba(3, 10, 24, 0.94);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.08), 0 0 32px rgba(34, 211, 238, 0.18), 0 20px 60px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+}
+@keyframes call-speak { from { transform: scale(0.94); } to { transform: scale(1.12); } }
+.timeline-future::-webkit-slider-thumb { background: #e879f9; box-shadow: 0 0 14px rgba(217, 70, 239, 0.9); }
+.timeline-future::-moz-range-thumb { background: #e879f9; }
+
+/* eventos naturales activos (NASA EONET) */
+.globe-event {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--ev);
+  box-shadow: 0 0 8px var(--ev), 0 0 2px #000;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.globe-event::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ev);
+  animation: ev-ping 2s ease-out infinite;
+}
+.globe-event:hover { transform: translate(-50%, -50%) scale(1.5); }
+@keyframes ev-ping { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(2.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .globe-event::after { animation: none; } }
