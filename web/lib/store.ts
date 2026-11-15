@@ -10,18 +10,17 @@ export type Selection = {
   lng: number;
   surface: "land" | "water" | "unknown";
   country: string | null;
-  regionKey: string | null; // processed NASA data region containing the point, if any
+  regionKey: string | null;
 };
 
 export type StudyZone = Selection & { confirmedAt: string };
 
 export type AreaFeature = ReturnType<typeof toFeature>;
 
-/** Polygon being drawn or edited (Documento 01 §7.3–7.5). */
 export type Draw = {
   status: "off" | "drawing" | "closed";
   vertices: LatLng[];
-  past: LatLng[][]; // undo history
+  past: LatLng[][];
 };
 
 const OFF: Draw = { status: "off", vertices: [], past: [] };
@@ -29,16 +28,15 @@ const OFF: Draw = { status: "off", vertices: [], past: [] };
 type ExplorerState = {
   selection: Selection | null;
   zone: StudyZone | null;
-  area: AreaFeature | null; // confirmed polygon
+  area: AreaFeature | null;
   draw: Draw;
   select: (s: Selection) => void;
   clear: () => void;
   confirm: () => StudyZone | null;
-  // polygon tool
   startDraw: () => void;
   addVertex: (v: LatLng) => void;
   closeShape: () => void;
-  checkpoint: () => void; // save history before a drag
+  checkpoint: () => void;
   moveVertex: (i: number, v: LatLng) => void;
   insertVertex: (i: number, v: LatLng) => void;
   removeVertex: (i: number) => void;
@@ -50,8 +48,6 @@ type ExplorerState = {
 
 const push = (d: Draw): LatLng[][] => [...d.past.slice(-49), d.vertices];
 
-// Module 01, §7.8: the confirmed zone lives only for the session (sessionStorage),
-// never permanently (RN-08, RN-09).
 export const useExplorer = create<ExplorerState>()(
   persist(
     (set, get) => ({
@@ -101,7 +97,6 @@ export const useExplorer = create<ExplorerState>()(
       removeVertex: (i) => {
         const d = get().draw;
         const vertices = d.vertices.filter((_, k) => k !== i);
-        // fewer than 3 points: the shape opens again (Documento 01 §7.5)
         set({ draw: { ...d, past: push(d), vertices, status: vertices.length < 3 ? "drawing" : d.status } });
       },
       undo: () => {

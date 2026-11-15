@@ -1,4 +1,3 @@
-// Static data produced by export/build_site_data.py (never computed in the browser).
 import { create } from "zustand";
 
 export type Scale = { min: number; max: number; colors: string[] };
@@ -70,7 +69,6 @@ const getJSON = <T,>(url: string) => {
 export const loadManifest = (scope: Scope) => getJSON<Manifest>(`${base(scope)}/manifest.json`);
 export const loadSeries = (scope: Scope, v: string) => getJSON<Series>(`${base(scope)}/series/${v}.json`);
 
-// ---------------- data-layer UI state ----------------
 type LayerState = {
   scope: Scope;
   setScope: (s: Scope) => void;
@@ -101,3 +99,30 @@ export const fmt = (v: number | null | undefined, d = 2) =>
   v === null || v === undefined || Number.isNaN(v) ? "—" : v.toFixed(d);
 
 export const gradient = (colors: string[]) => `linear-gradient(90deg, ${colors.join(", ")})`;
+
+const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+
+export function valueOfColor(s: Scale, r: number, g: number, b: number): { value: number; t: number } {
+  const stops = s.colors.map(hexRgb);
+  const steps = 255;
+  let best = 0;
+  let dist = Infinity;
+  for (let k = 0; k <= steps; k++) {
+    const pos = (k / steps) * (stops.length - 1);
+    const i = Math.min(Math.floor(pos), stops.length - 2);
+    const f = pos - i;
+    const c = stops[i].map((v, j) => v * (1 - f) + stops[i + 1][j] * f);
+    const d2 = (c[0] - r) ** 2 + (c[1] - g) ** 2 + (c[2] - b) ** 2;
+    if (d2 < dist) {
+      dist = d2;
+      best = k;
+    }
+  }
+  const t = best / steps;
+  return { value: s.min + t * (s.max - s.min), t };
+}
+
+export const useProbe = create<{ t: number | null; set: (t: number | null) => void }>()((set) => ({
+  t: null,
+  set: (t) => set({ t }),
+}));

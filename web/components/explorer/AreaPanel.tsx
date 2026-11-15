@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, Check, Hexagon, PenLine, Plus, Trash2, Undo2, X } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import type { Issue, LatLng } from "@/lib/geo";
 import { fmtCoord } from "@/lib/regions";
 import type { AreaFeature, Draw } from "@/lib/store";
@@ -36,13 +37,14 @@ export default function AreaPanel({ draw, area, stats, onClose, onUndo, onCancel
   const confirmed = draw.status === "off" && !!area;
   const valid = !!stats && stats.issues.length === 0;
 
+  const t = useT();
   const hint = confirmed
-    ? "This area is saved for this session and ready for the analysis steps."
+    ? t("El área quedó guardada en esta sesión y lista para analizar.", "This area is saved for this session and ready for the analysis steps.")
     : draw.status === "drawing"
       ? n < 3
-        ? "Click on the globe to add points."
-        : "Keep adding points, or click the first point (or press Enter) to close the shape."
-      : "Drag points to adjust · click a small dot on an edge to add a point · right-click a point to remove it.";
+        ? t("Haz clic en el globo para añadir puntos.", "Click on the globe to add points.")
+        : t("Sigue añadiendo puntos, o toca el primero (o Enter) para cerrar la forma.", "Keep adding points, or click the first point (or press Enter) to close the shape.")
+      : t("Arrastra los puntos para ajustar · toca un punto pequeño de un borde para añadir · clic derecho para quitar.", "Drag points to adjust · click a small dot on an edge to add a point · right-click a point to remove it.");
 
   const cov = stats?.coverage.fraction ?? 0;
   const hiRes = cov >= 0.999 ? "100%" : cov > 0 ? `${Math.round(cov * 100)}%` : null;
@@ -50,39 +52,39 @@ export default function AreaPanel({ draw, area, stats, onClose, onUndo, onCancel
   return (
     <div>
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan">
-        <Hexagon className="size-4" /> Step 1 · Study area
+        <Hexagon className="size-4" /> {t("Paso 1 · Área de estudio", "Step 1 · Study area")}
       </div>
       <h2 className="mt-3 text-lg font-semibold">
-        {confirmed ? "Study area confirmed" : draw.status === "drawing" ? "Draw your area" : "Adjust your area"}
+        {confirmed ? t("Área confirmada", "Study area confirmed") : draw.status === "drawing" ? t("Dibuja tu área", "Draw your area") : t("Ajusta tu área", "Adjust your area")}
       </h2>
       <p className="mt-1 text-sm text-muted">{hint}</p>
 
       <dl className="mt-3 divide-y divide-line/60 text-sm">
-        <Row k="Points" v={<span className="font-mono">{confirmed ? (area!.geometry.coordinates[0].length - 1) : n}</span>} />
-        {stats && stats.areaKm2 > 0 && <Row k="Area" v={<span className="font-mono">{km2(stats.areaKm2)}</span>} />}
+        <Row k={t("Puntos", "Points")} v={<span className="font-mono">{confirmed ? (area!.geometry.coordinates[0].length - 1) : n}</span>} />
+        {stats && stats.areaKm2 > 0 && <Row k={t("Área", "Area")} v={<span className="font-mono">{km2(stats.areaKm2)}</span>} />}
         {stats?.centroid && (
           <Row
-            k="Centre"
+            k={t("Centro", "Centre")}
             v={<span className="font-mono text-xs">{fmtCoord(stats.centroid.lat, "N", "S")}, {fmtCoord(stats.centroid.lng, "E", "W")}</span>}
           />
         )}
         {stats && stats.areaKm2 > 0 && (
           <Row
-            k="NASA data"
+            k={t("Datos NASA", "NASA data")}
             v={<span className="rounded-full bg-cyan/15 px-2.5 py-0.5 text-xs font-semibold text-cyan">Global 0.5° · 2001–2024</span>}
           />
         )}
-        {stats?.crossesAntimeridian && <Row k="Antimeridian" v={<span className="text-xs text-muted">crosses ±180°</span>} />}
+        {stats?.crossesAntimeridian && <Row k={t("Antimeridiano", "Antimeridian")} v={<span className="text-xs text-muted">{t("cruza ±180°", "crosses ±180°")}</span>} />}
       </dl>
 
       {stats && stats.areaKm2 > 0 && (
         <p className="mt-2 text-xs text-muted">
-          Rain, vegetation, surface and air temperature and humidity are available for any area of the planet.
-          {hiRes && ` ${hiRes} of it also lies in the ${stats.regionLabel} case study (0.1° high-res maps).`}
+          {t("Lluvia, vegetación, temperatura de superficie y del aire, y humedad están disponibles para cualquier área del planeta.",
+            "Rain, vegetation, surface and air temperature and humidity are available for any area of the planet.")}
+          {hiRes && t(` El ${hiRes} está además en el caso de estudio ${stats.regionLabel} (mapas de 0.1°).`, ` ${hiRes} of it also lies in the ${stats.regionLabel} case study (0.1° high-res maps).`)}
         </p>
       )}
 
-      {/* validation messages */}
       <AnimatePresence>
         {draw.status === "closed" && stats && stats.issues.length > 0 && (
           <motion.ul
@@ -102,31 +104,30 @@ export default function AreaPanel({ draw, area, stats, onClose, onUndo, onCancel
         )}
       </AnimatePresence>
 
-      {/* actions */}
       <div className="mt-4 flex flex-wrap gap-2">
         {draw.status === "drawing" && (
           <button onClick={onClose} disabled={n < 3} className="btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-40">
-            <Check className="size-4" /> Close shape
+            <Check className="size-4" /> {t("Cerrar forma", "Close shape")}
           </button>
         )}
         {draw.status === "closed" && (
           <button onClick={onConfirm} disabled={!valid} className="btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-40">
-            <Check className="size-4" /> Confirm study area
+            <Check className="size-4" /> {t("Confirmar área", "Confirm study area")}
           </button>
         )}
         {confirmed && (
           <>
-            <button onClick={onEdit} className="btn flex-1 justify-center"><PenLine className="size-4" /> Edit</button>
-            <button onClick={onNew} className="btn flex-1 justify-center"><Plus className="size-4" /> New area</button>
-            <button onClick={onClear} className="btn" aria-label="Remove area"><Trash2 className="size-4" /></button>
+            <button onClick={onEdit} className="btn flex-1 justify-center"><PenLine className="size-4" /> {t("Editar", "Edit")}</button>
+            <button onClick={onNew} className="btn flex-1 justify-center"><Plus className="size-4" /> {t("Nueva área", "New area")}</button>
+            <button onClick={onClear} className="btn" aria-label={t("Quitar área", "Remove area")}><Trash2 className="size-4" /></button>
           </>
         )}
         {!confirmed && (
           <>
-            <button onClick={onUndo} disabled={draw.past.length === 0} className="btn disabled:opacity-40" aria-label="Undo" title="Undo (Ctrl/⌘ Z)">
+            <button onClick={onUndo} disabled={draw.past.length === 0} className="btn disabled:opacity-40" aria-label={t("Deshacer", "Undo")} title={t("Deshacer (Ctrl/⌘ Z)", "Undo (Ctrl/⌘ Z)")}>
               <Undo2 className="size-4" />
             </button>
-            <button onClick={onCancel} className="btn" aria-label="Cancel drawing" title="Cancel (Esc)">
+            <button onClick={onCancel} className="btn" aria-label={t("Cancelar dibujo", "Cancel drawing")} title={t("Cancelar (Esc)", "Cancel (Esc)")}>
               <X className="size-4" />
             </button>
           </>

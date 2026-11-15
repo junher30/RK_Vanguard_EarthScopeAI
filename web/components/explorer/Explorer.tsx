@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  ArrowRight, Check, Crosshair, Hexagon, MapPin, Minus, Moon, Pause, Play, Plus, Satellite, Search, Sun, X,
+  ArrowRight, BookOpen, Check, CircleHelp, Share2, Clapperboard, Crosshair, Flame, Hexagon, MapPin, Minus, Moon, Pause, Play, Plus, Satellite, Search, Sun, X,
 } from "lucide-react";
 import type { DataOverlay, GlobeApi, Imagery, VertexAction } from "@/components/globe/EarthGlobe";
 import AreaPanel, { type AreaStats } from "./AreaPanel";
@@ -15,6 +15,23 @@ import { loadManifest, mapUrl, useLayer, type Manifest } from "@/lib/data";
 import { DATA_REGIONS, fmtCoord, regionCenter } from "@/lib/regions";
 import { useExplorer } from "@/lib/store";
 import StepRail from "./StepRail";
+import ChatPanel from "@/components/chat/ChatPanel";
+import Mascot from "@/components/chat/Mascot";
+import CallBar, { CallButton } from "@/components/chat/CallBar";
+import Tutorial from "@/components/chat/Tutorial";
+import XRButtons from "@/components/xr/XRButtons";
+import SatelliteCard from "./SatelliteCard";
+import { satPosition, type Sat } from "@/lib/satellites";
+import { useMascot } from "@/lib/mascot";
+import { setActionRunner, type AgentAction } from "@/lib/agentActions";
+import { LangToggle, initLang, tr, useT, varShort } from "@/lib/i18n";
+import { forecastUrl, futureYears, loadForecast, useForecast } from "@/lib/forecast";
+import { useEvents, type GeoEvent } from "@/lib/events";
+import EventCard, { EventLegend } from "./EventCard";
+import StoryPlayer, { StoryMenu } from "@/components/story/StoryPlayer";
+import { useStory } from "@/lib/stories";
+import { applyShared, shareUrl } from "@/lib/share";
+import Methodology from "./Methodology";
 
 const EarthGlobe = dynamic(() => import("@/components/globe/EarthGlobe"), { ssr: false });
 
@@ -22,11 +39,34 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function Explorer() {
   const { selection, zone, area, draw, select, clear, confirm } = useExplorer();
+  const t = useT();
+  useEffect(() => { initLang(); loadForecast(); }, []);
+  const fc = useForecast();
   const api = useRef<GlobeApi | null>(null);
   const [ready, setReady] = useState(false);
   const [intro, setIntro] = useState(true);
   const [spinning, setSpinning] = useState(true);
   const [imagery, setImagery] = useState<Imagery>("day");
+  const [showSats, setShowSats] = useState(true);
+  const [sat, setSat] = useState<Sat | null>(null);
+  const [follow, setFollow] = useState(false);
+  const ev = useEvents();
+  const storyOn = useStory((st) => !!st.story);
+  useEffect(() => useStory.subscribe((st, prev) => { if (st.story && !prev.story) setIntro(false); }), []);
+  const [event, setEvent] = useState<GeoEvent | null>(null);
+  const [method, setMethod] = useState(false);
+
+  // seguir al satélite: la cámara lo acompaña
+  useEffect(() => {
+    if (!sat || !follow) return;
+    const go = () => {
+      const p = satPosition(sat);
+      if (p) api.current?.flyTo(p.lat, p.lng, 1.4);
+    };
+    go();
+    const id = setInterval(go, 1500);
+    return () => clearInterval(id);
+  }, [sat, follow]);
   const [coords, setCoords] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [wide, setWide] = useState(false);
@@ -40,31 +80,45 @@ export default function Explorer() {
       .catch(() => {
         if (!live) return;
         setManifest(null);
-        setToast(scope === "global" ? "Global layers not exported yet." : "NASA data layers unavailable.");
+        setToast(scope === "global" ? tr("Las capas globales aún no están exportadas.", "Global layers not exported yet.") : tr("Capas NASA no disponibles.", "NASA data layers unavailable."));
       });
     return () => { live = false; };
   }, [scope]);
 
   const layerMeta = manifest?.variables.find((v) => v.key === variable) ?? null;
 
-  // keep the layer state consistent with what the current scope offers
   useEffect(() => {
     if (!manifest) return;
     const st = useLayer.getState();
     if (st.variable && !manifest.variables.some((v) => v.key === st.variable)) st.setVariable(null);
     const meta = manifest.variables.find((v) => v.key === st.variable);
     if (meta && st.mode === "trend" && !meta.scale.trend) st.setMode("value");
-    if (meta && !meta.years.includes(st.year)) st.setYear(meta.years[meta.years.length - 1]);
-  }, [manifest, variable]);
+    const last = meta?.years[meta.years.length - 1] ?? 2024;
+    const future = st.mode === "value" && futureYears(meta?.key ?? null, last).includes(st.year);
+    if (meta && !meta.years.includes(st.year) && !future) st.setYear(last);
+  }, [manifest, variable, fc.available]);
 
-  const overlay = useMemo<DataOverlay | null>(
-    () => layerMeta && {
-      url: mapUrl(scope, layerMeta.key, mode, year),
-      preload: mode === "trend" ? [] : layerMeta.years.map((y) => mapUrl(scope, layerMeta.key, mode, y)),
+  const overlay = useMemo<DataOverlay | null>(() => {
+    if (!layerMeta) return null;
+    const last = layerMeta.years[layerMeta.years.length - 1];
+    const fut = mode === "value" && scope === "global" && fc.available && fc.variables.includes(layerMeta.key)
+      ? fc.years.filter((y) => y > last) : [];
+    const isFuture = fut.includes(year);
+    const url = (y: number) => (y > last ? forecastUrl(layerMeta.key, y, layerMeta.scale.value) : mapUrl(scope, layerMeta.key, mode, y));
+    return {
+      url: url(year),
+      future: isFuture,
+      preload: mode === "trend" ? [] : [...layerMeta.years, ...fut].map(url),
       bounds: layerMeta.bounds,
-    },
-    [layerMeta, scope, mode, year],
-  );
+      scale: (mode === "trend" ? layerMeta.scale.trend : layerMeta.scale[mode]) ?? layerMeta.scale.value,
+      decimals: layerMeta.decimals,
+      units: layerMeta.units + (mode === "trend" ? tr(" / década", " / decade") : ""),
+      signed: mode !== "value",
+      faded: mode === "trend",
+      caption: `${varShort(layerMeta.key, layerMeta.short)} · ${isFuture ? `${tr("predicción IA", "AI forecast")} ${year}` : mode === "trend" ? tr("tendencia", "trend") : mode === "anomaly" ? `${tr("anomalía", "anomaly")} ${year}` : `${tr("media", "mean")} ${year}`}`,
+      rain: layerMeta.key === "precip_mm_day" && mode === "value",
+    };
+  }, [layerMeta, scope, mode, year, fc]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 900px)");
@@ -74,14 +128,13 @@ export default function Explorer() {
     return () => mq.removeEventListener("change", on);
   }, []);
 
-  // restore a zone confirmed earlier in this session (sessionStorage only)
   useEffect(() => {
     Promise.resolve(useExplorer.persist.rehydrate()).then(() => {
       const { zone: z, area: a } = useExplorer.getState();
       if (z) {
         useExplorer.getState().select(z);
         setIntro(false);
-        api.current?.flyTo(z.lat, z.lng, 1.4); // if the globe was ready before rehydration
+        api.current?.flyTo(z.lat, z.lng, 1.4);
       } else if (a) {
         setIntro(false);
         const c = a.properties.centroid as { lat: number; lng: number } | undefined;
@@ -103,8 +156,10 @@ export default function Explorer() {
     if (z) a.flyTo(z.lat, z.lng, 1.4);
     const c = ar?.properties.centroid as { lat: number; lng: number } | undefined;
     if (c) a.flyTo(c.lat, c.lng, 1.6);
+    // un enlace compartido abre la vista exacta
+    if (applyShared()) setIntro(false);
   }, []);
-  const onBordersError = useCallback(() => setToast("Country borders unavailable. Coordinates still work."), []);
+  const onBordersError = useCallback(() => setToast(tr("Fronteras no disponibles. Las coordenadas siguen funcionando.", "Country borders unavailable. Coordinates still work.")), []);
 
   const onSelect = (s: Parameters<typeof select>[0]) => {
     select(s);
@@ -115,7 +170,7 @@ export default function Explorer() {
   const goToCoords = () => {
     const m = coords.split(/[,;\s]+/).filter(Boolean).map(Number);
     if (m.length < 2 || m.some(Number.isNaN) || Math.abs(m[0]) > 90 || Math.abs(m[1]) > 180) {
-      setToast("Enter valid coordinates: latitude −90…90, longitude −180…180");
+      setToast(tr("Coordenadas no válidas: latitud −90…90, longitud −180…180", "Enter valid coordinates: latitude −90…90, longitude −180…180"));
       return;
     }
     const region = DATA_REGIONS.find(
@@ -123,6 +178,72 @@ export default function Explorer() {
     );
     onSelect({ lat: m[0], lng: m[1], surface: "unknown", country: null, regionKey: region?.key ?? null });
   };
+
+  // acciones que pide la mascota: volar, marcar un punto y cambiar la capa
+  useEffect(() => {
+    setActionRunner((actions: AgentAction[]) => {
+      setIntro(false);
+      if (!actions.some((a) => a.type === "spin")) {
+        setSpinning(false);
+        api.current?.setSpin(false);
+      }
+      for (const a of actions) {
+        if (a.type === "fly") {
+          api.current?.flyTo(a.lat, a.lng, a.altitude);
+        } else if (a.type === "select") {
+          const region = DATA_REGIONS.find(
+            (r) => a.lat >= r.latMin && a.lat <= r.latMax && a.lng >= r.lonMin && a.lng <= r.lonMax,
+          );
+          const st = useExplorer.getState();
+          st.select({ lat: a.lat, lng: a.lng, surface: "unknown", country: null, regionKey: region?.key ?? null });
+          st.confirm();
+          const L = useLayer.getState();
+          L.setScope("global");
+          if (!L.variable) L.setVariable("precip_mm_day");
+        } else if (a.type === "zoom") {
+          api.current?.zoom(a.dir === "in" ? 0.7 : 1.4);
+        } else if (a.type === "spin") {
+          api.current?.setSpin(a.on);
+          setSpinning(a.on);
+        } else if (a.type === "imagery") {
+          setImagery(a.mode);
+        } else if (a.type === "play") {
+          const L = useLayer.getState();
+          if (a.on && !L.variable) L.setVariable("precip_mm_day");
+          if (a.on && L.mode === "trend") L.setMode("value");
+          L.setPlaying(a.on);
+        } else if (a.type === "scope") {
+          const L = useLayer.getState();
+          if (a.scope === "amazon") {
+            const c = regionCenter(DATA_REGIONS[0]);
+            api.current?.flyTo(c.lat, c.lng, 1.1);
+            L.setScope("amazon");
+            if (!L.variable) L.setVariable("precip_mm_day");
+          } else {
+            L.setScope("global");
+          }
+        } else if (a.type === "hide") {
+          useLayer.getState().setPlaying(false);
+          useLayer.getState().setVariable(null);
+        } else if (a.type === "clear") {
+          useExplorer.getState().clear();
+        } else if (a.type === "events") {
+          useEvents.getState().setOn(a.on);
+        } else if (a.type === "tour") {
+          useMascot.getState().setTour(true);
+        } else if (a.type === "layer") {
+          const L = useLayer.getState();
+          L.setScope(a.scope ?? "global");
+          L.setPlaying(false);
+          L.setVariable(a.variable);
+          L.setMode(a.play && a.mode === "trend" ? "value" : a.mode);
+          if (a.year) L.setYear(a.year);
+          if (a.play) L.setPlaying(true);
+        }
+      }
+    });
+    return () => setActionRunner(null);
+  }, []);
 
   const flyToRegion = () => {
     const c = regionCenter(DATA_REGIONS[0]);
@@ -139,7 +260,6 @@ export default function Explorer() {
     setSpinning(on);
   };
 
-  // after confirming, open the analysis of that place right away (global 0.5° data)
   const showAnalysis = () => {
     const L = useLayer.getState();
     L.setScope("global");
@@ -147,12 +267,11 @@ export default function Explorer() {
   };
   const doConfirm = () => {
     if (confirm()) {
-      setToast("Study zone saved — analysing NASA data for it.");
+      setToast(tr("Zona guardada: analizando sus datos NASA.", "Study zone saved — analysing NASA data for it."));
       showAnalysis();
     }
   };
 
-  // ---------------- polygon tool (Documento 01 §7.3–7.7) ----------------
   const box = DATA_REGIONS[0];
   const stats = useMemo<AreaStats | null>(() => {
     const vs = draw.status !== "off" ? draw.vertices
@@ -196,12 +315,11 @@ export default function Explorer() {
       dataCoverage: { region: box.key, fraction: +stats.coverage.fraction.toFixed(4), cells: stats.coverage.cells },
     });
     if (f) {
-      setToast("Study area saved — analysing NASA data for it.");
+      setToast(tr("Área guardada: analizando sus datos NASA.", "Study area saved — analysing NASA data for it."));
       showAnalysis();
     }
   };
 
-  // keyboard: Enter closes, Esc cancels, Ctrl/⌘+Z undoes, Backspace removes the last point
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const st = useExplorer.getState();
@@ -218,7 +336,7 @@ export default function Explorer() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const hideSearch = intro || !!variable;
+  const hideSearch = intro || !!variable || storyOn;
   const region = selection?.regionKey ? DATA_REGIONS.find((r) => r.key === selection.regionKey) : null;
   const isConfirmed = !!zone && !!selection && zone.lat === selection.lat && zone.lng === selection.lng;
 
@@ -226,7 +344,7 @@ export default function Explorer() {
     <main className="relative h-dvh w-full overflow-hidden bg-space bg-[url(/textures/night-sky.png)] bg-cover bg-center text-ink">
       <motion.div
         className="absolute inset-0"
-        aria-label="Interactive 3D globe"
+        aria-label="3D globe"
         animate={{ x: !wide ? "0%" : intro ? "22%" : variable ? "0%" : "-12%" }}
         transition={{ duration: 1.2, ease }}
       >
@@ -241,10 +359,14 @@ export default function Explorer() {
           onSelect={onSelect}
           onReady={onReady}
           onBordersError={onBordersError}
+          showSats={showSats}
+          selectedSat={sat?.norad ?? null}
+          events={ev.on ? ev.events : undefined}
+          onEvent={(e) => { setEvent(e); setSat(null); setIntro(false); api.current?.setSpin(false); setSpinning(false); api.current?.flyTo(e.lat, e.lng, 1.3); }}
+          onSatellite={(s) => { setSat(s); setFollow(false); setIntro(false); api.current?.setSpin(false); setSpinning(false); }}
         />
       </motion.div>
 
-      {/* vignette for legibility */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(3,8,20,.85)_100%)]" />
 
       <AnimatePresence>
@@ -260,28 +382,44 @@ export default function Explorer() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-cyan opacity-60" />
                 <span className="relative inline-flex size-4 rounded-full bg-cyan" />
               </span>
-              <span className="text-sm tracking-wide">Loading Earth…</span>
+              <span className="text-sm tracking-wide">{t("Cargando la Tierra…", "Loading Earth…")}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* header */}
+      <StoryPlayer />
+      <StoryMenu />
+      <Methodology open={method} onClose={() => setMethod(false)} manifest={manifest} />
+      {!intro && ready && !storyOn && <Mascot />}
+      {!intro && ready && <Tutorial />}
+      {!intro && <CallBar />}
+
       <motion.header
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.3, ease }}
-        className="glass absolute inset-x-4 top-4 z-20 flex items-center justify-between gap-4 px-5 py-3"
+        className="glass absolute inset-x-4 top-4 z-30 flex items-center justify-between gap-4 px-5 py-3"
       >
         <div className="flex items-center gap-3">
           <span className="size-3 rounded-full bg-cyan shadow-[0_0_14px_#22d3ee]" />
           <b className="tracking-wide">EarthScope AI</b>
-          <span className="hidden text-sm text-muted sm:inline">Planetary Investigation Lab</span>
+          <span className="hidden text-sm text-muted xl:inline">{t("Laboratorio de investigación planetaria", "Planetary Investigation Lab")}</span>
         </div>
-        <StepRail active={zone || area ? 2 : 1} />
+        <div className="flex items-center gap-3">
+          <StepRail active={zone || area ? 2 : 1} />
+          <LangToggle />
+          <XRButtons />
+          {!intro && (
+            <button onClick={() => useStory.getState().setMenu(true)} className="btn" title={t("Historias narradas", "Narrated stories")}>
+              <Clapperboard className="size-4" /> <span className="hidden lg:inline">{t("Historias", "Stories")}</span>
+            </button>
+          )}
+          {!intro && <CallButton />}
+          {!intro && <ChatPanel />}
+        </div>
       </motion.header>
 
-      {/* intro hero */}
       <AnimatePresence>
         {intro && ready && (
           <motion.section
@@ -296,37 +434,42 @@ export default function Explorer() {
               NASA Space Apps 2026 · Earth System Trend Detective
             </p>
             <h1 className="text-4xl font-semibold leading-tight sm:text-6xl">
-              Don&apos;t just observe Earth&apos;s changes.
+              {t("No solo observes cómo cambia la Tierra.", "Don't just observe Earth's changes.")}
               <span className="block bg-gradient-to-r from-cyan via-green to-blue bg-clip-text text-transparent">
-                Investigate them.
+                {t("Investígalo.", "Investigate them.")}
               </span>
             </h1>
             <p className="mt-4 max-w-md text-muted">
-              Pick any place on the planet, then detect trends, simulate scenarios and trace every
-              conclusion back to NASA satellite data.
+              {t("Elige cualquier lugar del planeta, detecta tendencias, mira el futuro que predice nuestra red neuronal y comprueba cada conclusión con datos de satélites NASA.",
+                "Pick any place on the planet, detect trends, see the future our neural network predicts and trace every conclusion back to NASA satellite data.")}
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <button onClick={() => { setIntro(false); }} className="btn-primary">
-                Start exploring <ArrowRight className="size-4" />
+                {t("Empezar a explorar", "Start exploring")} <ArrowRight className="size-4" />
+              </button>
+              <button onClick={() => { setIntro(false); useStory.getState().setMenu(true); }} className="btn">
+                <Clapperboard className="size-4" /> {t("Ver una historia", "Watch a story")}
               </button>
               <button onClick={flyToRegion} className="btn">
-                <Satellite className="size-4" /> Central Amazon case study
+                <Satellite className="size-4" /> {t("Caso de estudio: Amazonía", "Central Amazon case study")}
               </button>
+            </div>
+            <div className="mt-4">
+              <XRButtons big />
             </div>
           </motion.section>
         )}
       </AnimatePresence>
 
-      {/* selection panel */}
       <AnimatePresence>
-        {!intro && (
+        {!intro && !storyOn && (
           <motion.aside
             key="panel"
             initial={{ x: 40, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 40, opacity: 0 }}
             transition={{ duration: 0.6, ease }}
-            className={`glass absolute inset-x-4 bottom-28 z-20 p-5 sm:inset-x-auto sm:right-4 sm:top-24 sm:bottom-auto sm:w-[360px] ${variable ? "hidden sm:block" : ""}`}
+            className={`glass absolute inset-x-4 bottom-28 z-20 p-5 sm:inset-x-auto sm:right-[68px] sm:top-24 sm:bottom-auto sm:w-[360px] ${variable ? "hidden sm:block" : ""}`}
             aria-live="polite"
           >
             {draw.status !== "off" || (area && !selection) ? (
@@ -344,23 +487,23 @@ export default function Explorer() {
               />
             ) : (<>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan">
-              <MapPin className="size-4" /> Step 1 · Study location
+              <MapPin className="size-4" /> {t("Paso 1 · Lugar de estudio", "Step 1 · Study location")}
             </div>
 
             <AnimatePresence mode="wait">
               {!selection ? (
                 <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <h2 className="mt-3 text-lg font-semibold">Click anywhere on Earth</h2>
+                  <h2 className="mt-3 text-lg font-semibold">{t("Haz clic en cualquier lugar de la Tierra", "Click anywhere on Earth")}</h2>
                   <p className="mt-1 text-sm text-muted">
-                    Drag to rotate · scroll or pinch to zoom. The dashed cyan box marks where processed
-                    NASA data is available.
+                    {t("Arrastra para girar · rueda o pellizca para acercar. El recuadro cian marca el caso de estudio en alta resolución.",
+                      "Drag to rotate · scroll or pinch to zoom. The dashed cyan box marks the high-resolution case study.")}
                   </p>
                   <div className="mt-4 flex gap-2">
                     <button onClick={startDraw} className="btn-primary flex-1 justify-center">
-                      <Hexagon className="size-4" /> Select area
+                      <Hexagon className="size-4" /> {t("Seleccionar área", "Select area")}
                     </button>
                     <button onClick={flyToRegion} className="btn flex-1 justify-center">
-                      <Satellite className="size-4" /> Data region
+                      <Satellite className="size-4" /> {t("Región de datos", "Data region")}
                     </button>
                   </div>
                 </motion.div>
@@ -373,32 +516,33 @@ export default function Explorer() {
                   transition={{ duration: 0.3 }}
                 >
                   <h2 className="mt-3 text-lg font-semibold">
-                    {selection.country ?? (selection.surface === "water" ? "Ocean / sea" : "Selected point")}
+                    {selection.country ?? (selection.surface === "water" ? t("Océano / mar", "Ocean / sea") : t("Punto seleccionado", "Selected point"))}
                   </h2>
                   <dl className="mt-3 divide-y divide-line/60 text-sm">
-                    <Row k="Latitude" v={<span className="font-mono">{fmtCoord(selection.lat, "N", "S")}</span>} />
-                    <Row k="Longitude" v={<span className="font-mono">{fmtCoord(selection.lng, "E", "W")}</span>} />
+                    <Row k={t("Latitud", "Latitude")} v={<span className="font-mono">{fmtCoord(selection.lat, "N", "S")}</span>} />
+                    <Row k={t("Longitud", "Longitude")} v={<span className="font-mono">{fmtCoord(selection.lng, "E", "W")}</span>} />
                     <Row
-                      k="Surface"
+                      k={t("Superficie", "Surface")}
                       v={
-                        selection.surface === "land" ? <Tag tone="green">Land</Tag>
-                        : selection.surface === "water" ? <Tag tone="blue">Water</Tag>
-                        : <Tag tone="muted">Click map to detect</Tag>
+                        selection.surface === "land" ? <Tag tone="green">{t("Tierra", "Land")}</Tag>
+                        : selection.surface === "water" ? <Tag tone="blue">{t("Agua", "Water")}</Tag>
+                        : <Tag tone="muted">{t("Haz clic para detectar", "Click map to detect")}</Tag>
                       }
                     />
                     <Row
-                      k="Hemisphere"
-                      v={`${selection.lat >= 0 ? "Northern" : "Southern"} · ${selection.lng >= 0 ? "Eastern" : "Western"}`}
+                      k={t("Hemisferio", "Hemisphere")}
+                      v={`${selection.lat >= 0 ? t("Norte", "Northern") : t("Sur", "Southern")} · ${selection.lng >= 0 ? t("Oriental", "Eastern") : t("Occidental", "Western")}`}
                     />
                     <Row
-                      k="NASA data coverage"
-                      v={<Tag tone="cyan">{region ? "Global + 0.1° high-res" : "Global 0.5° · 2001–2024"}</Tag>}
+                      k={t("Cobertura NASA", "NASA data coverage")}
+                      v={<Tag tone="cyan">{region ? t("Global + 0.1° alta resolución", "Global + 0.1° high-res") : "Global 0.5° · 2001–2024"}</Tag>}
                     />
                   </dl>
                   <p className="mt-3 text-xs text-muted">
                     {region
-                      ? `Inside the ${region.label} case study: also has 0.1° high-resolution maps.`
-                      : "Rain, vegetation, surface and air temperature and humidity from NASA's global grids. Confirm to analyse it."}
+                      ? t(`Dentro del caso de estudio ${region.label}: también tiene mapas de 0.1°.`, `Inside the ${region.label} case study: also has 0.1° high-resolution maps.`)
+                      : t("Lluvia, vegetación, temperatura de superficie y del aire, y humedad de las grillas globales NASA. Confírmalo para analizarlo.",
+                        "Rain, vegetation, surface and air temperature and humidity from NASA's global grids. Confirm to analyse it.")}
                   </p>
 
                   <div className="mt-4 flex gap-2">
@@ -408,24 +552,24 @@ export default function Explorer() {
                         animate={{ scale: 1, opacity: 1 }}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-green/40 bg-green/10 px-4 py-2.5 text-sm font-semibold text-green"
                       >
-                        <Check className="size-4" /> Study zone confirmed
+                        <Check className="size-4" /> {t("Zona confirmada", "Study zone confirmed")}
                       </motion.div>
                     ) : (
                       <button onClick={doConfirm} className="btn-primary flex-1 justify-center">
-                        <Check className="size-4" /> Confirm study zone
+                        <Check className="size-4" /> {t("Confirmar zona", "Confirm study zone")}
                       </button>
                     )}
-                    <button onClick={clear} className="btn" aria-label="Clear selection">
+                    <button onClick={clear} className="btn" aria-label={t("Borrar selección", "Clear selection")}>
                       <X className="size-4" />
                     </button>
                   </div>
                   {isConfirmed && (
                     <p className="mt-3 text-center text-xs text-muted">
-                      Analysis of this point is open on the left. Switch layers below to change the variable.
+                      {t("El análisis del punto está a la izquierda. Cambia la capa abajo para ver otra variable.", "Analysis of this point is open on the left. Switch layers below to change the variable.")}
                     </p>
                   )}
                   <button onClick={startDraw} className="btn mt-3 w-full justify-center">
-                    <Hexagon className="size-4" /> Draw an area instead
+                    <Hexagon className="size-4" /> {t("Dibujar un área", "Draw an area instead")}
                   </button>
                 </motion.div>
               )}
@@ -435,7 +579,6 @@ export default function Explorer() {
         )}
       </AnimatePresence>
 
-      {/* coordinate search */}
       <motion.div
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: hideSearch ? 30 : 0, opacity: hideSearch ? 0 : 1, pointerEvents: hideSearch ? "none" : "auto" }}
@@ -443,7 +586,7 @@ export default function Explorer() {
         className="glass absolute left-4 top-24 z-20 hidden w-80 p-3 md:block"
       >
         <label htmlFor="coords" className="flex items-center gap-2 text-xs text-muted">
-          <Crosshair className="size-3.5" /> Go to coordinates (lat, lon)
+          <Crosshair className="size-3.5" /> {t("Ir a coordenadas (lat, lon)", "Go to coordinates (lat, lon)")}
         </label>
         <div className="mt-2 flex gap-2">
           <input
@@ -451,42 +594,93 @@ export default function Explorer() {
             value={coords}
             onChange={(e) => setCoords(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && goToCoords()}
-            placeholder="e.g. -3.1, -60.0"
+            placeholder={t("ej. -3.1, -60.0", "e.g. -3.1, -60.0")}
             className="w-full rounded-lg border border-line bg-deep px-3 py-2 font-mono text-sm outline-none transition focus:border-cyan"
           />
-          <button onClick={goToCoords} className="btn px-3" aria-label="Go">
+          <button onClick={goToCoords} className="btn px-3" aria-label={t("Ir", "Go")}>
             <Search className="size-4" />
           </button>
         </div>
       </motion.div>
 
-      {/* NASA data: insight panel (left) + timeline dock (bottom) */}
       <AnimatePresence>
-        {!intro && layerMeta && manifest && (
+        {!intro && !storyOn && layerMeta && manifest && (
           <InsightPanel key={`${scope}-${layerMeta.key}`} scope={scope} meta={layerMeta} regionLabel={manifest.region.label} />
         )}
       </AnimatePresence>
-      {!intro && <DataDock manifest={manifest} />}
+      {!intro && <div className={storyOn ? "pointer-events-none opacity-0" : ""}><DataDock manifest={manifest} /></div>}
 
-      {/* globe controls */}
       <motion.div
         initial={{ x: 30, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.7, delay: 0.6, ease }}
-        className="absolute right-4 top-24 z-20 flex flex-col gap-2 sm:top-auto sm:bottom-4"
+        className="absolute right-4 top-24 z-20 flex flex-col gap-1.5 sm:top-auto sm:bottom-4"
       >
-        <IconBtn label="Zoom in" onClick={() => api.current?.zoom(0.7)}><Plus className="size-5" /></IconBtn>
-        <IconBtn label="Zoom out" onClick={() => api.current?.zoom(1.4)}><Minus className="size-5" /></IconBtn>
-        <IconBtn label={spinning ? "Pause rotation" : "Resume rotation"} onClick={toggleSpin}>
+        <IconBtn label={t("Acercar", "Zoom in")} onClick={() => api.current?.zoom(0.7)}><Plus className="size-5" /></IconBtn>
+        <IconBtn label={t("Alejar", "Zoom out")} onClick={() => api.current?.zoom(1.4)}><Minus className="size-5" /></IconBtn>
+        <IconBtn label={spinning ? t("Pausar rotación", "Pause rotation") : t("Reanudar rotación", "Resume rotation")} onClick={toggleSpin}>
           {spinning ? <Pause className="size-5" /> : <Play className="size-5" />}
         </IconBtn>
         <IconBtn
-          label={imagery === "day" ? "Show night lights" : "Show daytime imagery"}
+          label={imagery === "day" ? t("Ver luces nocturnas", "Show night lights") : t("Ver imagen de día", "Show daytime imagery")}
           onClick={() => setImagery((m) => (m === "day" ? "night" : "day"))}
         >
           {imagery === "day" ? <Moon className="size-5" /> : <Sun className="size-5" />}
         </IconBtn>
+        <IconBtn label={showSats ? t("Ocultar satélites", "Hide satellites") : t("Mostrar satélites", "Show satellites")} onClick={() => { setShowSats((v) => !v); setSat(null); setFollow(false); }}>
+          <Satellite className={`size-5 ${showSats ? "text-cyan" : ""}`} />
+        </IconBtn>
+        <IconBtn
+          label={ev.on ? t("Ocultar eventos en vivo", "Hide live events") : t("Eventos naturales en vivo (NASA)", "Live natural events (NASA)")}
+          onClick={() => { ev.setOn(!ev.on); setEvent(null); setIntro(false); }}
+        >
+          <Flame className={`size-5 ${ev.on ? "text-orange-400" : ""}`} />
+        </IconBtn>
+        <IconBtn
+          label={t("Copiar enlace de esta vista", "Copy a link to this view")}
+          onClick={() => {
+            const u = shareUrl();
+            history.replaceState(null, "", u);
+            navigator.clipboard?.writeText(u).then(
+              () => setToast(tr("Enlace copiado: abre esta misma vista.", "Link copied: it opens this exact view.")),
+              () => setToast(u),
+            );
+          }}
+        >
+          <Share2 className="size-5" />
+        </IconBtn>
+        <IconBtn label={t("Metodología", "Methodology")} onClick={() => setMethod(true)}>
+          <BookOpen className="size-5" />
+        </IconBtn>
+        <IconBtn label={t("Recorrido guiado", "Guided tour")} onClick={() => { setIntro(false); useMascot.getState().setTour(true); }}>
+          <CircleHelp className="size-5" />
+        </IconBtn>
       </motion.div>
+
+      <AnimatePresence>
+        {sat && showSats && (
+          <SatelliteCard
+            key={sat.norad}
+            sat={sat}
+            following={follow}
+            onFollow={() => setFollow((f) => !f)}
+            onLayer={(k) => {
+              const L = useLayer.getState();
+              L.setScope("global");
+              L.setVariable(k);
+              if (L.mode === "trend") L.setMode("value");
+            }}
+            onClose={() => { setSat(null); setFollow(false); }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {event && ev.on && !storyOn && <EventCard key={event.id} ev={event} onClose={() => setEvent(null)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {ev.on && !intro && !storyOn && <EventLegend key="legend" events={ev.events} status={ev.status} />}
+      </AnimatePresence>
 
       <AnimatePresence>
         {toast && (
@@ -535,7 +729,7 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="glass grid size-11 place-items-center !rounded-xl text-ink transition-colors hover:border-cyan hover:text-cyan"
+      className="glass grid size-10 place-items-center !rounded-xl text-ink transition-colors hover:border-cyan hover:text-cyan"
     >
       {children}
     </motion.button>

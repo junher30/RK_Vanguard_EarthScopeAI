@@ -1,11 +1,14 @@
-import { Check } from "lucide-react";
+"use client";
 
-// The five steps of the NASA challenge. Step 1 here covers "Choose a region".
-const STEPS = ["Location", "Variables", "Time period", "Trends", "Significance"];
+import { Check } from "lucide-react";
+import { useT } from "@/lib/i18n";
+
 
 export default function StepRail({ active }: { active: number }) {
+  const t = useT();
+  const STEPS = [t("Lugar", "Location"), t("Variables", "Variables"), t("Periodo", "Time period"), t("Tendencias", "Trends"), t("Significancia", "Significance")];
   return (
-    <ol className="hidden items-center gap-1.5 text-xs md:flex" aria-label="Investigation steps">
+    <ol className="hidden items-center gap-1.5 text-xs 2xl:flex" aria-label="Investigation steps">
       {STEPS.map((s, i) => {
         const n = i + 1;
         const done = n < active;

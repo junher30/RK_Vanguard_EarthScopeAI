@@ -1,5 +1,3 @@
-// Mirrors science/variables.py → REGIONS. The science engine is the single source of truth;
-// keep this in sync when a region is added there.
 export type DataRegion = {
   key: string;
   label: string;

@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import * as THREE from "three";
+import { createDetail, type Detail } from "@/lib/globe/detail";
+import { Rain, rainSource } from "@/lib/globe/rain";
+import { satMesh, useSatellites, type SatObj } from "@/lib/globe/useSatellites";
+import { eventStyle, type GeoEvent } from "@/lib/events";
+import type { Sat } from "@/lib/satellites";
 import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import { DATA_REGIONS, regionAt, regionCenter, regionOutline } from "@/lib/regions";
 import { midpoint, toFeature, type LatLng } from "@/lib/geo";
 import type { AreaFeature, Draw, Selection } from "@/lib/store";
+import { fmt, useProbe, valueOfColor, type Scale } from "@/lib/data";
 
 type CountryFeature = GeoJSON.Feature<GeoJSON.Geometry, { name: string }>;
 
@@ -31,9 +37,43 @@ export type DataOverlay = {
   url: string;
   preload: string[];
   bounds: { lat_min: number; lat_max: number; lon_min: number; lon_max: number };
+  scale: Scale;
+  decimals: number;
+  units: string;
+  signed: boolean;
+  faded: boolean;
+  caption: string;
+  rain?: boolean;
+  future?: boolean;
 };
 
-// One texture per PNG, loaded once; switching years swaps the map on a single material.
+type EvObj = { kind: "event"; lat: number; lng: number; ev: GeoEvent };
+
+const setOpacity = (m: THREE.Material, v: number) => { m.opacity = v; };
+
+const pixels = new Map<string, ImageData | "loading">();
+function pixelData(url: string): ImageData | null {
+  const p = pixels.get(url);
+  if (p) return p === "loading" ? null : p;
+  pixels.set(url, "loading");
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0);
+    pixels.set(url, ctx.getImageData(0, 0, c.width, c.height));
+  };
+  img.onerror = () => pixels.delete(url);
+  img.src = url;
+  return null;
+}
+
+type Probe = { x: number; y: number; lat: number; lng: number; value: number | null; weak: boolean };
+
 const textures = new Map<string, THREE.Texture>();
 const loader = new THREE.TextureLoader();
 function texture(url: string, onLoad?: (t: THREE.Texture) => void) {
@@ -46,7 +86,6 @@ function texture(url: string, onLoad?: (t: THREE.Texture) => void) {
     textures.set(url, t);
   } else if (t.image) onLoad?.(t);
   else {
-    // still loading (e.g. preloaded): wait for it
     const tex = t;
     const img = new Image();
     img.onload = () => onLoad?.(tex);
@@ -74,16 +113,20 @@ type Props = {
   onVertex: (a: VertexAction) => void;
   onReady: (api: GlobeApi) => void;
   onBordersError?: () => void;
+  showSats?: boolean;
+  events?: GeoEvent[];
+  onEvent?: (e: GeoEvent) => void;
+  selectedSat?: number | null;
+  onSatellite?: (s: Sat) => void;
 };
 
 type Pt = { lat: number; lng: number; kind: "mark" | "vertex" | "mid"; i: number };
 type UserPoly = GeoJSON.Feature<GeoJSON.Polygon, { __user: true }>;
-type PathObj = { coords: [number, number][]; kind: "region" | "user" };
+type PathObj = { coords: ([number, number] | [number, number, number])[]; kind: "region" | "user" | "orbit" | "storm"; color?: string };
 
 const isUser = (d: object): d is UserPoly =>
   !!(d as { properties?: { __user?: boolean } }).properties?.__user;
 
-// great-circle angle between two points, degrees (to skip vertices on the far side)
 const angle = (a: LatLng, b: LatLng) => {
   const r = Math.PI / 180;
   const c = Math.sin(a.lat * r) * Math.sin(b.lat * r) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.cos((a.lng - b.lng) * r);
@@ -92,20 +135,108 @@ const angle = (a: LatLng, b: LatLng) => {
 
 export default function EarthGlobe({
   selection, overlay, imagery, draw, drawValid, area, onSelect, onVertex, onReady, onBordersError,
+  showSats = false, selectedSat = null, onSatellite, events = [], onEvent,
 }: Props) {
+  const evClick = useRef(onEvent);
+  useEffect(() => { evClick.current = onEvent; }, [onEvent]);
+  const sats = useSatellites(showSats, selectedSat);
+  const satClick = useRef(onSatellite);
+  // accesores estables: si cambian en cada render, el globo recrea etiquetas y satélites cada segundo
+  const htmlEl = useCallback((d: object) => {
+    const el = document.createElement("div");
+    if ((d as SatObj).kind === "sat") {
+      const o = d as SatObj;
+      el.className = "globe-sat-label";
+      el.style.setProperty("--sat", o.color);
+      el.textContent = o.text;
+      // la etiqueta también abre la ficha del satélite
+      el.onpointerdown = (e) => e.stopPropagation();
+      el.onclick = (e) => { e.stopPropagation(); satClick.current?.(o.sat); };
+      return el;
+    }
+    if ((d as EvObj).kind === "event") {
+      const o = d as EvObj;
+      el.className = "globe-event";
+      el.style.setProperty("--ev", eventStyle(o.ev.kind).color);
+      el.title = o.ev.title;
+      el.onpointerdown = (e) => e.stopPropagation();
+      el.onclick = (e) => { e.stopPropagation(); evClick.current?.(o.ev); };
+      return el;
+    }
+    el.className = "globe-region-label";
+    el.textContent = (d as { text: string }).text;
+    return el;
+  }, []);
+  const satObj = useCallback(
+    (d: object) => satMesh((d as SatObj).color, (d as SatObj).sat.norad === 25544 ? 2.4 : 1.8),
+    [],
+  );
+  useEffect(() => { satClick.current = onSatellite; }, [onSatellite]);
+  const evObjs = useMemo<EvObj[]>(() => events.map((ev) => ({ kind: "event", lat: ev.lat, lng: ev.lng, ev })), [events]);
   const ref = useRef<GlobeMethods | undefined>(undefined);
   const wrap = useRef<HTMLDivElement>(null);
+  const detail = useRef<Detail | null>(null);
+  const rain = useRef<Rain | null>(null);
+  const fx = useRef(0);
+  // océanos con brillo: el mapa de agua hace de máscara especular
+  const globeMat = useMemo(() => {
+    const m = new THREE.MeshPhongMaterial({ specular: new THREE.Color(0x3a4a5a), shininess: 14 });
+    new THREE.TextureLoader().load(TEX.water, (t) => { m.specularMap = t; m.needsUpdate = true; });
+    return m;
+  }, []);
+  const imageryRef = useRef(imagery);
+  const zoomRef = useRef(1);
+  const [zoomK, setZoomK] = useState(1);
+
+  // detalle: cambia entre día y noche
+  useEffect(() => {
+    imageryRef.current = imagery;
+    detail.current?.setImagery(imagery);
+  }, [imagery]);
+  useEffect(() => () => cancelAnimationFrame(fx.current), []);
+
+  // lluvia: gotas donde la capa de precipitación marca más lluvia
+  const rainUrl = overlay?.rain ? overlay.url : null;
+  const rainScale = overlay?.scale;
+  const rainBounds = overlay?.bounds;
+  useEffect(() => {
+    if (!rainUrl || !rainScale || !rainBounds) { rain.current?.setSource(null); return; }
+    let live = true;
+    rainSource(rainUrl, rainScale, rainBounds).then((src) => { if (live) rain.current?.setSource(src); });
+    return () => { live = false; };
+  }, [rainUrl, rainScale, rainBounds]);
   const dragging = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [countries, setCountries] = useState<CountryFeature[]>([]);
   const [hover, setHover] = useState<CountryFeature | null>(null);
+  const [probe, setProbe] = useState<Probe | null>(null);
+  const probeFrame = useRef(0);
+  const setProbeT = useProbe((s) => s.set);
+  useEffect(() => {
+    if (!overlay) useProbe.getState().set(null);
+  }, [overlay]);
+  useEffect(() => {
+    if (overlay?.url) pixelData(overlay.url);
+  }, [overlay?.url]);
   const material = useMemo(
     () => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.92, depthWrite: false, side: THREE.DoubleSide }),
     [],
   );
 
-  // swap the texture only once the new image has loaded (no flicker while animating)
+  // la predicción respira como un holograma para que no se confunda con los datos medidos
+  const future = !!overlay?.future;
+  useEffect(() => {
+    if (!future) { setOpacity(material, 0.92); return; }
+    let raf = 0;
+    const tick = () => {
+      setOpacity(material, 0.72 + 0.18 * (0.5 + 0.5 * Math.sin(performance.now() / 450)));
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [future, material]);
+
   const url = overlay?.url;
   useEffect(() => {
     if (!url) return;
@@ -158,11 +289,9 @@ export default function EarthGlobe({
     () => DATA_REGIONS.map((r) => ({ ...regionCenter(r), lat: r.latMax + 1.2, text: `${r.label} · NASA data` })),
     [],
   );
-  // globe.gl mutates the objects it renders; never hand it app state directly
   const lat = selection?.lat, lng = selection?.lng;
   const marks = useMemo(() => (lat === undefined || lng === undefined ? [] : [{ lat, lng }]), [lat, lng]);
 
-  // ---------------- polygon being drawn / confirmed area ----------------
   const drawing = draw.status !== "off";
   const verts = draw.vertices;
   const mids = useMemo(
@@ -182,19 +311,21 @@ export default function EarthGlobe({
     ...mids.map((v, i) => ({ ...v, kind: "mid" as const, i })),
   ], [marks, drawing, verts, mids]);
 
+  const orbitColor = sats.list.find((o) => o.sat.norad === selectedSat)?.color;
   const paths = useMemo<PathObj[]>(() => {
-    const region = DATA_REGIONS.map((r) => ({ coords: regionOutline(r), kind: "region" as const }));
+    const base = DATA_REGIONS.map((r) => ({ coords: regionOutline(r), kind: "region" as const }));
+    const storms: PathObj[] = events.filter((e) => e.track && e.track.length > 1)
+      .map((e) => ({ coords: e.track!, kind: "storm" as const, color: eventStyle(e.kind).color }));
+    const region: PathObj[] = [...base, ...storms, ...(sats.orbit ? [{ coords: sats.orbit, kind: "orbit" as const, color: orbitColor }] : [])];
     if (shape.length < 2) return region;
     const coords = shape.map((v) => [v.lat, v.lng] as [number, number]);
     if (closed) coords.push(coords[0]);
     return [...region, { coords, kind: "user" as const }];
-  }, [shape, closed]);
+  }, [shape, closed, sats.orbit, orbitColor, events]);
 
   const userPoly = useMemo<UserPoly | null>(() => {
-    // an invalid ring (e.g. crossing edges) can't be triangulated: show only its edges
     if (!closed || shape.length < 3 || (drawing && !drawValid)) return null;
     const f = toFeature(shape, { __user: true });
-    // globe.gl caps face outward with clockwise rings (GeoJSON stores counter-clockwise)
     f.geometry.coordinates[0].reverse();
     return f as unknown as UserPoly;
   }, [closed, shape, drawing, drawValid]);
@@ -203,7 +334,6 @@ export default function EarthGlobe({
   const edgeColor = !closed ? "#e2e8f0" : drawing && !drawValid ? "#f87171" : "#22d3ee";
   const fillColor = drawing && !drawValid ? "rgba(248,113,113,.18)" : "rgba(34,211,238,.16)";
 
-  // ---------------- vertex hit-testing and dragging ----------------
   const local = (e: React.PointerEvent | React.MouseEvent) => {
     const r = wrap.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -215,7 +345,7 @@ export default function EarthGlobe({
     const near = (list: LatLng[], px: number) => {
       let best = -1, bestD = px;
       list.forEach((v, i) => {
-        if (angle(pov, v) > 80) return; // far side of the globe
+        if (angle(pov, v) > 80) return;
         const s = g.getScreenCoords(v.lat, v.lng, 0.012);
         const d = Math.hypot(s.x - x, s.y - y);
         if (d < bestD) { best = i; bestD = d; }
@@ -234,7 +364,7 @@ export default function EarthGlobe({
     const { x, y } = local(e);
     const h = hit(x, y);
     if (!h) return;
-    e.stopPropagation(); // keep the camera still and skip globe.gl's click
+    e.stopPropagation();
     suppressClick.current = true;
     if (draw.status === "drawing") {
       if (h.kind === "vertex" && h.i === 0 && verts.length >= 3) onVertex({ type: "close" });
@@ -249,8 +379,39 @@ export default function EarthGlobe({
     }
     wrap.current?.setPointerCapture(e.pointerId);
   };
+  const readValue = (x: number, y: number) => {
+    cancelAnimationFrame(probeFrame.current);
+    probeFrame.current = requestAnimationFrame(() => {
+      const o = overlay;
+      const ll = o ? ref.current?.toGlobeCoords(x, y) : null;
+      const b = o?.bounds;
+      if (!o || !ll || !b || ll.lat < b.lat_min || ll.lat > b.lat_max || ll.lng < b.lon_min || ll.lng > b.lon_max) {
+        setProbe(null);
+        setProbeT(null);
+        return;
+      }
+      const img = pixelData(o.url);
+      let value: number | null = null;
+      let weak = false;
+      let t: number | null = null;
+      if (img) {
+        const px = Math.min(img.width - 1, Math.floor(((ll.lng - b.lon_min) / (b.lon_max - b.lon_min)) * img.width));
+        const py = Math.min(img.height - 1, Math.floor(((b.lat_max - ll.lat) / (b.lat_max - b.lat_min)) * img.height));
+        const k = (py * img.width + px) * 4;
+        if (img.data[k + 3] > 0) {
+          const r = valueOfColor(o.scale, img.data[k], img.data[k + 1], img.data[k + 2]);
+          value = r.value;
+          t = r.t;
+          weak = o.faded && img.data[k + 3] < 120;
+        }
+      }
+      setProbe({ x, y, lat: ll.lat, lng: ll.lng, value, weak });
+      setProbeT(t);
+    });
+  };
   const onPointerMoveCapture = (e: React.PointerEvent) => {
     const { x, y } = local(e);
+    readValue(x, y);
     if (dragging.current !== null) {
       e.stopPropagation();
       const ll = ref.current?.toGlobeCoords(x, y);
@@ -288,8 +449,38 @@ export default function EarthGlobe({
     c.autoRotate = true;
     c.autoRotateSpeed = 0.35;
     c.enableDamping = true;
-    c.minDistance = 120;
+    c.minDistance = 103;
     c.maxDistance = 600;
+    c.zoomSpeed = 0.8;
+    // detalle NASA GIBS al acercarse y lluvia animada
+    const det = createDetail(100.08, 2);
+    det.setImagery(imageryRef.current);
+    g.scene().add(det.obj);
+    detail.current = det;
+    const r = new Rain(100, 4500);
+    g.scene().add(r);
+    rain.current = r;
+    let last = performance.now(), lastPov = 0;
+    const loop = (now: number) => {
+      fx.current = requestAnimationFrame(loop);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      const alt = g.pointOfView().altitude;
+      r.update(dt, alt);
+      if (now - lastPov > 200) {
+        lastPov = now;
+        det.obj.updatePov(g.camera());
+        // el marcador se achica al acercarse
+        const z = Math.round(Math.min(1, alt / 0.8) * 20) / 20;
+        if (z !== zoomRef.current) {
+          zoomRef.current = z;
+          setZoomK(z);
+          // de cerca la capa de datos se aclara para dejar ver el detalle del terreno
+          material.opacity = 0.5 + 0.42 * z;
+        }
+      }
+    };
+    fx.current = requestAnimationFrame(loop);
     g.pointOfView({ lat: -5, lng: -40, altitude: 2.6 }, 0);
     g.pointOfView({ lat: -5, lng: -60, altitude: 2.2 }, 2400);
     onReady({
@@ -299,7 +490,7 @@ export default function EarthGlobe({
       },
       zoom: (f) => {
         const p = g.pointOfView();
-        g.pointOfView({ ...p, altitude: Math.min(4, Math.max(0.3, p.altitude * f)) }, 450);
+        g.pointOfView({ ...p, altitude: Math.min(4, Math.max(0.04, p.altitude * f)) }, 450);
       },
       setSpin: (on) => {
         c.autoRotate = on;
@@ -311,7 +502,7 @@ export default function EarthGlobe({
   const pick = (lat: number, lng: number, country: string | null) => {
     if (suppressClick.current) { suppressClick.current = false; return; }
     if (draw.status === "drawing") return onVertex({ type: "add", at: { lat, lng } });
-    if (draw.status === "closed") return; // editing: only handles respond
+    if (draw.status === "closed") return;
     const region = regionAt(lat, lng);
     onSelect({
       lat: +lat.toFixed(4),
@@ -327,24 +518,29 @@ export default function EarthGlobe({
   return (
     <div
       ref={wrap}
-      className="h-full w-full"
+      className="relative h-full w-full"
       onPointerDownCapture={onPointerDownCapture}
       onPointerMoveCapture={onPointerMoveCapture}
       onPointerUpCapture={onPointerUpCapture}
       onContextMenu={onContextMenu}
+      onPointerLeave={() => {
+        cancelAnimationFrame(probeFrame.current);
+        setProbe(null);
+        setProbeT(null);
+      }}
     >
     <Globe
       ref={ref}
       width={size.w}
       height={size.h}
       onGlobeReady={handleReady}
+      globeMaterial={globeMat}
       globeImageUrl={imagery === "day" ? TEX.day : TEX.night}
       bumpImageUrl={TEX.bump}
       backgroundColor="rgba(0,0,0,0)"
       showAtmosphere
       atmosphereColor="#22d3ee"
       atmosphereAltitude={0.2}
-      // country borders + hover highlight
       polygonsData={polys}
       polygonAltitude={(d) => (isUser(d) ? 0.009 : d === hover ? 0.012 : 0.004)}
       polygonCapColor={(d) => (isUser(d) ? fillColor : d === hover ? "rgba(52,211,153,.22)" : "rgba(0,0,0,0)")}
@@ -357,7 +553,6 @@ export default function EarthGlobe({
       onPolygonHover={(d) => setHover(d && !isUser(d) ? (d as CountryFeature) : null)}
       onPolygonClick={(d, _e, c) => pick(c.lat, c.lng, isUser(d) ? null : (d as CountryFeature).properties.name)}
       onGlobeClick={({ lat, lng }) => pick(lat, lng, null)}
-      // NASA data overlay (annual map PNG from export/build_site_data.py)
       tilesData={tiles}
       tileLat="lat"
       tileLng="lng"
@@ -369,29 +564,35 @@ export default function EarthGlobe({
       onTileClick={(_t, _e, c) => pick(c.lat, c.lng, null)}
       onPathClick={(_p, _e, c) => pick(c.lat, c.lng, null)}
       onPointClick={(_p, _e, c) => pick(c.lat, c.lng, null)}
-      // processed-data region outline
       pathsData={paths}
       pathPoints="coords"
       pathPointLat={(p) => (p as [number, number])[0]}
       pathPointLng={(p) => (p as [number, number])[1]}
-      pathColor={(p: object) => ((p as PathObj).kind === "user" ? edgeColor : ["#22d3ee", "#67e8f9"])}
-      pathStroke={(p) => ((p as PathObj).kind === "user" ? 2 : 2.4)}
-      pathDashLength={(p) => ((p as PathObj).kind === "user" ? (closed ? 1 : 0.04) : 0.08)}
-      pathDashGap={(p) => ((p as PathObj).kind === "user" ? (closed ? 0 : 0.015) : 0.02)}
-      pathDashAnimateTime={(p) => ((p as PathObj).kind === "user" ? 0 : 6000)}
-      pathPointAlt={() => 0.011}
+      pathColor={(p: object) => {
+        const o = p as PathObj;
+        if (o.kind === "orbit" || o.kind === "storm") return [`${o.color ?? "#22d3ee"}00`, o.color ?? "#22d3ee"];
+        return o.kind === "user" ? edgeColor : ["#22d3ee", "#67e8f9"];
+      }}
+      pathStroke={(p) => ((p as PathObj).kind === "orbit" || (p as PathObj).kind === "storm" ? 1.2 : (p as PathObj).kind === "user" ? 2 : 2.4)}
+      pathDashLength={(p) => ((p as PathObj).kind === "orbit" || (p as PathObj).kind === "storm" ? 1 : (p as PathObj).kind === "user" ? (closed ? 1 : 0.04) : 0.08)}
+      pathDashGap={(p) => ((p as PathObj).kind === "orbit" || (p as PathObj).kind === "storm" ? 0 : (p as PathObj).kind === "user" ? (closed ? 0 : 0.015) : 0.02)}
+      pathDashAnimateTime={(p) => ((p as PathObj).kind === "region" ? 6000 : 0)}
+      pathPointAlt={(pt) => ((pt as number[])[2] ?? 0.011)}
       pathTransitionDuration={0}
-      htmlElementsData={labels}
+      htmlElementsData={evObjs.length || showSats ? [...labels, ...(showSats ? sats.list : []), ...evObjs] : labels}
       htmlLat="lat"
       htmlLng="lng"
-      htmlAltitude={0.01}
-      htmlElement={(d) => {
-        const el = document.createElement("div");
-        el.className = "globe-region-label";
-        el.textContent = (d as { text: string }).text;
-        return el;
-      }}
-      // selected point
+      htmlAltitude={(d) => ((d as SatObj).kind === "sat" ? (d as SatObj).alt + 0.02 : (d as EvObj).kind === "event" ? 0.012 : 0.01)}
+      htmlTransitionDuration={0}
+      htmlElement={htmlEl}
+      objectsData={sats.list}
+      objectLat="lat"
+      objectLng="lng"
+      objectAltitude="alt"
+      objectFacesSurfaces={false}
+      objectThreeObject={satObj}
+      objectLabel={(d) => `<div class="globe-tip">${(d as SatObj).text}</div>`}
+      onObjectClick={(d) => onSatellite?.((d as SatObj).sat)}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
@@ -401,22 +602,41 @@ export default function EarthGlobe({
         if (d.kind === "vertex") return d.i === 0 && draw.status === "drawing" ? "#22d3ee" : "#f8fafc";
         return "#22d3ee";
       }}
-      pointAltitude={(p) => ((p as Pt).kind === "mark" ? 0.025 : 0.012)}
+      pointAltitude={(p) => ((p as Pt).kind === "mark" ? 0.025 * Math.max(0.08, zoomK) : 0.012)}
       pointRadius={(p) => {
         const d = p as Pt;
         if (d.kind === "mid") return 0.16;
         if (d.kind === "vertex") return d.i === 0 && draw.status === "drawing" && verts.length >= 3 ? 0.42 : 0.28;
-        return 0.45;
+        return 0.45 * Math.max(0.08, zoomK);
       }}
       pointsTransitionDuration={0}
       ringsData={marks}
       ringLat="lat"
       ringLng="lng"
       ringColor={() => (t: number) => `rgba(34,211,238,${1 - t})`}
-      ringMaxRadius={4.5}
+      ringMaxRadius={4.5 * Math.max(0.08, zoomK)}
       ringPropagationSpeed={2.5}
       ringRepeatPeriod={900}
     />
+    {probe && overlay && (
+      <div
+        className="pointer-events-none absolute z-20 rounded-lg border border-white/15 bg-[#04101cee] px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur"
+        style={{ left: probe.x + 16, top: probe.y + 14 }}
+      >
+        {probe.value === null ? (
+          <span className="text-muted">No data here</span>
+        ) : (
+          <span className="font-mono font-semibold tabular-nums text-ink">
+            ≈ {overlay.signed && probe.value > 0 ? "+" : ""}{fmt(probe.value, overlay.decimals)} {overlay.units}
+            {probe.weak && <span className="ml-1 font-sans font-normal text-muted">(not significant)</span>}
+          </span>
+        )}
+        <span className="mt-0.5 block text-[10px] text-muted">
+          {overlay.caption} · {Math.abs(probe.lat).toFixed(2)}°{probe.lat >= 0 ? "N" : "S"}{" "}
+          {Math.abs(probe.lng).toFixed(2)}°{probe.lng >= 0 ? "E" : "W"}
+        </span>
+      </div>
+    )}
     </div>
   );
 }

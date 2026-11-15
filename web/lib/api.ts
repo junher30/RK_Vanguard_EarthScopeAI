@@ -1,8 +1,8 @@
-// Client for the EarthScope analysis API (api/main.py). The API runs science/ on the
-// global 0.5° grids; the browser only displays the result.
 import type { Series } from "./data";
+import type { AgentAction } from "./agentActions";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// por defecto el backend va por el proxy /backend de Next (mismo origen: sirve en HTTPS y en el visor VR)
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/backend";
 
 export type AreaTarget =
   | { geometry: { type: "Polygon"; coordinates: number[][][] }; point?: undefined }
@@ -40,7 +40,30 @@ export function analyzeArea(variable: string, target: AreaTarget): Promise<AreaR
       return r.json() as Promise<AreaResult>;
     })
     .finally(() => clearTimeout(timer));
-  p.catch(() => cache.delete(body)); // allow retry after a failure
+  p.catch(() => cache.delete(body));
   cache.set(body, p);
   return p;
+}
+
+export type ChatContext = Record<string, unknown>;
+export type AgentReply = { reply: string; actions?: AgentAction[] };
+
+export async function askAgent(message: string, session: string, context: ChatContext): Promise<AgentReply> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 120000);
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/agent/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message, session, context }),
+      signal: ctl.signal,
+    });
+    if (r.status === 404 || r.status === 503) throw new Error("unavailable");
+    // el proxy responde 500 sin JSON cuando el backend está apagado
+    if (r.status >= 500 && !(r.headers.get("content-type") ?? "").includes("json")) throw new Error("unavailable");
+    if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail ?? `API ${r.status}`);
+    return (await r.json()) as AgentReply;
+  } finally {
+    clearTimeout(timer);
+  }
 }

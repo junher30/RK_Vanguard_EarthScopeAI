@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:vr": "next dev --experimental-https -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -17,7 +18,9 @@
     "react-dom": "19.3.0",
     "react-globe.gl": "^2.38.0",
     "recharts": "^3.10.1",
+    "satellite.js": "^5.0.0",
     "three": "^0.187.0",
+    "three-slippy-map-globe": "^1.0.0",
     "topojson-client": "^3.1.0",
     "zustand": "^5.1.0"
   },
