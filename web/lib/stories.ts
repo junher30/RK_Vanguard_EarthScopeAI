@@ -47,8 +47,8 @@ export const STORIES: Story[] = [
         actions: [{ type: "fly", lat: 45, lng: 60, altitude: 2.4 }],
       },
       {
-        es: "Sumando todo el planeta, el aire se calentó unos 0.35 grados en 24 años. Es una tendencia estadísticamente significativa.",
-        en: "Across the whole planet, the air warmed by about 0.35 degrees in 24 years. The trend is statistically significant.",
+        es: "Sumando todo el planeta, el aire se calentó unos 0.35 grados en 24 años. La tendencia es estadísticamente significativa, aunque se apoya en los récords de calor de 2023 y 2024.",
+        en: "Across the whole planet, the air warmed by about 0.35 degrees in 24 years. The trend is statistically significant, though it leans on the record-warm 2023 and 2024.",
         stat: { value: "+0.35 °C", es: "aire, 2001–2024 (MERRA-2)", en: "air, 2001–2024 (MERRA-2)" },
         actions: [{ type: "play", on: false }, { type: "layer", variable: "t2m_c", mode: "trend" }, { type: "fly", lat: 60, lng: 20, altitude: 2.2 }],
       },
@@ -118,8 +118,8 @@ export const STORIES: Story[] = [
         actions: [{ type: "play", on: false }, { type: "layer", variable: "evi", mode: "trend" }],
       },
       {
-        es: "Casi la mitad de la superficie cambió de forma significativa, y en su gran mayoría hacia más verde. India y China destacan, por la agricultura y la reforestación.",
-        en: "Almost half of the land changed significantly, mostly toward greener. India and China stand out, thanks to farming and reforestation.",
+        es: "Casi la mitad de la superficie cambió de forma significativa, y en su gran mayoría hacia más verde. India y China destacan; los estudios lo atribuyen sobre todo a la agricultura y la reforestación.",
+        en: "Almost half of the land changed significantly, mostly toward greener. India and China stand out; studies attribute it mainly to farming and tree planting.",
         stat: { value: "42%", es: "de la superficie reverdeció", en: "of the land got greener" },
         actions: [{ type: "fly", lat: 27, lng: 90, altitude: 1.6 }],
       },

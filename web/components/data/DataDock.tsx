@@ -140,7 +140,7 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
                   {t("Datos NASA", "NASA data")} {first}–{realLast}
                 </span>
                 <span className="flex-1 border-l border-dashed border-fuchsia-400/60 pl-1 text-fuchsia-300">
-                  {t("Predicción IA", "AI forecast")}
+                  {t("Proyección IA", "AI projection")}
                 </span>
               </div>
             )}
@@ -164,9 +164,9 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
             >
               <Sparkles className="mt-0.5 size-3.5 shrink-0 text-fuchsia-300" />
               <span>
-                <b className="text-fuchsia-300">{t("Predicción de la red neuronal", "Neural network forecast")} {year}.</b>{" "}
-                {t("Es una estimación, no una medición. Donde el color se desvanece, la red está menos segura.",
-                  "An estimate, not a measurement. Where colors fade, the network is less certain.")}
+                <b className="text-fuchsia-300">{t("Proyección experimental de la red neuronal", "Experimental neural-network projection")} {year}.</b>{" "}
+                {t("No es una medición ni un pronóstico: está validada solo a un mes vista y no incluye escenarios de emisiones. Donde el color se desvanece, la red está menos segura.",
+                  "Not a measurement or a forecast: validated only one month ahead, with no emission scenarios. Where colors fade, the network is less certain.")}
               </span>
             </motion.div>
           )}

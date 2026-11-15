@@ -46,8 +46,8 @@ const STEPS: Step[] = [
     mood: "talking",
   },
   {
-    es: "Y yo: háblame o escríbeme. Analizo, predigo hasta 2030 y te llevo a cualquier lugar del planeta.",
-    en: "And me: talk or type to me. I analyze, forecast to 2030 and take you anywhere on the planet.",
+    es: "Y yo: háblame o escríbeme. Analizo, te muestro una proyección experimental hasta 2030 y te llevo a cualquier lugar del planeta.",
+    en: "And me: talk or type to me. I analyze, show an experimental projection to 2030 and take you anywhere on the planet.",
     mood: "greet",
   },
 ];

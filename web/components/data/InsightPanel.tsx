@@ -188,11 +188,11 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
         <motion.span key={year} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-semibold tabular-nums">
           {fmt(current, d)}
         </motion.span>
-        <span className="pb-1 text-sm text-muted">{units(series.units)} · {futNow ? tt("predicción", "forecast") : tt("media", "mean")} {year}</span>
+        <span className="pb-1 text-sm text-muted">{units(series.units)} · {futNow ? tt("proyección", "projection") : tt("media", "mean")} {year}</span>
       </div>
       <p className="mt-1 text-xs text-muted">
         {delta === null ? (year > realLast
-          ? tt("Predicción en el globo. Marca un punto para ver su valor y la gráfica hasta 2030.", "Forecast shown on the globe. Mark a point to see its value and the chart to 2030.")
+          ? tt("Proyección experimental en el globo (no es un pronóstico). Marca un punto para ver su valor y la gráfica hasta 2030.", "Experimental projection on the globe (not a forecast). Mark a point to see its value and the chart to 2030.")
           : tt("Sin datos completos para este año.", "No complete data for this year.")) : (
           <>
             <span className={delta >= 0 ? "text-ink" : "text-ink"}>{delta >= 0 ? "+" : ""}{fmt(delta, d)} {series.units}</span>{" "}
@@ -205,7 +205,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
         <div className="mt-2 flex gap-2 rounded-xl border border-fuchsia-400/40 bg-fuchsia-500/10 p-2.5 text-xs text-fuchsia-100">
           <Sparkles className="mt-0.5 size-3.5 shrink-0 text-fuchsia-300" />
           <span>
-            {tt("Predicción de la red neuronal EarthScope", "EarthScope neural network forecast")}
+            {tt("Proyección experimental de la red neuronal EarthScope", "EarthScope neural network projection (experimental)")}
             {futNow.spread !== null && <> · ± {fmt(futNow.spread, d)} {units(series.units)} {tt("de dispersión entre modelos", "spread across models")}</>}
           </span>
         </div>
@@ -240,7 +240,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
             <Tooltip
               contentStyle={{ background: "#0b1a2e", border: "1px solid #1e3a5f", borderRadius: 8, fontSize: 12 }}
               labelStyle={{ color: "#e2e8f0" }}
-              formatter={(v, name) => [`${fmt(Number(v), d)} ${series.units}`, name === "trend" ? tt("Tendencia de Sen", "Sen trend") : name === "forecast" ? tt("Predicción IA", "AI forecast") : tt("Media anual", "Annual mean")]}
+              formatter={(v, name) => [`${fmt(Number(v), d)} ${series.units}`, name === "trend" ? tt("Tendencia de Sen", "Sen trend") : name === "forecast" ? tt("Proyección IA (experimental)", "AI projection (experimental)") : tt("Media anual", "Annual mean")]}
             />
             <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#fill-${meta.key})`} dot={false} activeDot={{ r: 4 }} isAnimationActive />
             <Line type="linear" dataKey="trend" stroke="#e2e8f0" strokeDasharray="5 4" strokeWidth={1.4} dot={false} isAnimationActive={false} />
@@ -249,7 +249,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <p className="-mt-1 text-[10px] text-muted">{tt("Toca la gráfica para ir a un año · punteada blanca: tendencia de Sen", "Click the chart to jump to a year · white dashed: Sen slope trend")}{fut.length > 0 && tt(" · fucsia: predicción IA", " · magenta: AI forecast")}</p>
+      <p className="-mt-1 text-[10px] text-muted">{tt("Toca la gráfica para ir a un año · punteada blanca: tendencia de Sen", "Click the chart to jump to a year · white dashed: Sen slope trend")}{fut.length > 0 && tt(" · fucsia: proyección IA experimental", " · magenta: experimental AI projection")}</p>
 
       <div
         className={`mt-4 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${

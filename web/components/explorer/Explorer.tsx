@@ -115,7 +115,7 @@ export default function Explorer() {
       units: layerMeta.units + (mode === "trend" ? tr(" / década", " / decade") : ""),
       signed: mode !== "value",
       faded: mode === "trend",
-      caption: `${varShort(layerMeta.key, layerMeta.short)} · ${isFuture ? `${tr("predicción IA", "AI forecast")} ${year}` : mode === "trend" ? tr("tendencia", "trend") : mode === "anomaly" ? `${tr("anomalía", "anomaly")} ${year}` : `${tr("media", "mean")} ${year}`}`,
+      caption: `${varShort(layerMeta.key, layerMeta.short)} · ${isFuture ? `${tr("proyección IA (experimental)", "AI projection (experimental)")} ${year}` : mode === "trend" ? tr("tendencia", "trend") : mode === "anomaly" ? `${tr("anomalía", "anomaly")} ${year}` : `${tr("media", "mean")} ${year}`}`,
       rain: layerMeta.key === "precip_mm_day" && mode === "value",
     };
   }, [layerMeta, scope, mode, year, fc]);

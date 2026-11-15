@@ -55,7 +55,7 @@ export default function Methodology({ open, onClose, manifest }: { open: boolean
             <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
               <li>{t("Un conjunto de redes U-Net entrenadas con los 24 años de datos predice el mes siguiente en todo el planeta, y se encadena mes a mes hasta 2030.", "An ensemble of U-Net networks trained on the 24 years of data predicts the next month across the planet, chained month by month to 2030.")}</li>
               <li>{t("La incertidumbre es la dispersión entre los modelos del conjunto: donde no están de acuerdo, el mapa se desvanece.", "Uncertainty is the spread between ensemble members: where they disagree, the map fades.")}</li>
-              <li>{t("Es una proyección estadística, no un modelo climático físico: no incluye escenarios de emisiones y la incertidumbre crece con cada año.", "It's a statistical projection, not a physical climate model: it has no emission scenarios and uncertainty grows every year.")}</li>
+              <li>{t("Es una proyección estadística EXPERIMENTAL, no un modelo climático físico: solo está validada a un mes vista (prueba 2023–2024), no incluye escenarios de emisiones, tiende al promedio histórico y la incertidumbre crece con cada año. No es un pronóstico.", "It's an EXPERIMENTAL statistical projection, not a physical climate model: it is validated only one month ahead (2023–2024 test), has no emission scenarios, drifts toward the historical average and its uncertainty grows every year. It is not a forecast.")}</li>
             </ul>
 
             <h3 className="mt-5 font-semibold text-cyan">4 · {t("Tiempo real y la IA", "Real time and the AI")}</h3>
