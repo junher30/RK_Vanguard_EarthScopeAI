@@ -16,7 +16,7 @@ export type VariableMeta = {
   bounds: { lat_min: number; lat_max: number; lon_min: number; lon_max: number };
   scale: { value: Scale; anomaly: Scale; trend?: Scale & { per: string } };
   kind?: "satellite" | "reanalysis";
-  trend_map?: { share_significant: number; share_significant_increase: number };
+  trend_map?: { share_significant: number; share_significant_increase: number; hotspots?: { lat: number; lng: number; value_per_decade: number }[] };
   verdict: string;
   robust: boolean;
 };

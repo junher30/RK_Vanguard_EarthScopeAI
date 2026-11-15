@@ -12,8 +12,7 @@ import { useExplorer } from "@/lib/store";
 import { tr, units, useT, varLabel, verdict } from "@/lib/i18n";
 import { forecastPoint, useForecast, type PointForecast } from "@/lib/forecast";
 import { Flame, Sparkles } from "lucide-react";
-import { hotspots, type Hotspot } from "@/lib/hotspots";
-import { mapUrl } from "@/lib/data";
+import { namedHotspots, type Hotspot } from "@/lib/hotspots";
 import { runActions } from "@/lib/agentActions";
 
 const COLOR: Record<string, string> = {
@@ -300,7 +299,7 @@ function Hotspots({ meta }: { meta: VariableMeta }) {
   const [list, setList] = useState<{ key: string; items: Hotspot[] } | null>(null);
   useEffect(() => {
     let live = true;
-    hotspots(mapUrl("global", meta.key, "trend", 2024), meta.scale.trend!).then((items) => live && setList({ key: meta.key, items })).catch(() => {});
+    namedHotspots(meta.trend_map?.hotspots).then((items) => live && setList({ key: meta.key, items })).catch(() => {});
     return () => { live = false; };
   }, [meta]);
   const items = list?.key === meta.key ? list.items : null;

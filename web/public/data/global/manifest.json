@@ -88,7 +88,45 @@
    },
    "trend_map": {
     "share_significant": 0.195172,
-    "share_significant_increase": 0.12196
+    "share_significant_increase": 0.12196,
+    "hotspots": [
+     {
+      "lat": 37.25,
+      "lng": 152.75,
+      "value_per_decade": 1.087002,
+      "significant_cells": 91
+     },
+     {
+      "lat": -7.75,
+      "lng": 157.75,
+      "value_per_decade": 1.086383,
+      "significant_cells": 56
+     },
+     {
+      "lat": -7.75,
+      "lng": -62.25,
+      "value_per_decade": -1.084099,
+      "significant_cells": 71
+     },
+     {
+      "lat": 27.25,
+      "lng": 127.75,
+      "value_per_decade": 1.066432,
+      "significant_cells": 51
+     },
+     {
+      "lat": -17.75,
+      "lng": 177.75,
+      "value_per_decade": 0.898841,
+      "significant_cells": 51
+     },
+     {
+      "lat": 37.25,
+      "lng": -67.25,
+      "value_per_decade": 0.896019,
+      "significant_cells": 55
+     }
+    ]
    },
    "verdict": "significant increasing trend",
    "robust": false
@@ -172,7 +210,45 @@
    },
    "trend_map": {
     "share_significant": 0.456106,
-    "share_significant_increase": 0.424128
+    "share_significant_increase": 0.424128,
+    "hotspots": [
+     {
+      "lat": 22.25,
+      "lng": 112.75,
+      "value_per_decade": 0.038803,
+      "significant_cells": 74
+     },
+     {
+      "lat": 22.25,
+      "lng": 77.75,
+      "value_per_decade": 0.029756,
+      "significant_cells": 100
+     },
+     {
+      "lat": 37.25,
+      "lng": 112.75,
+      "value_per_decade": 0.027151,
+      "significant_cells": 100
+     },
+     {
+      "lat": 7.25,
+      "lng": 32.75,
+      "value_per_decade": 0.02712,
+      "significant_cells": 89
+     },
+     {
+      "lat": 32.25,
+      "lng": 132.75,
+      "value_per_decade": 0.024979,
+      "significant_cells": 58
+     },
+     {
+      "lat": 52.25,
+      "lng": 112.75,
+      "value_per_decade": 0.021978,
+      "significant_cells": 87
+     }
+    ]
    },
    "verdict": "significant increasing trend",
    "robust": true
@@ -256,7 +332,45 @@
    },
    "trend_map": {
     "share_significant": 0.188949,
-    "share_significant_increase": 0.131688
+    "share_significant_increase": 0.131688,
+    "hotspots": [
+     {
+      "lat": 72.25,
+      "lng": 57.75,
+      "value_per_decade": 1.526375,
+      "significant_cells": 56
+     },
+     {
+      "lat": 17.25,
+      "lng": 77.75,
+      "value_per_decade": -1.348327,
+      "significant_cells": 95
+     },
+     {
+      "lat": 7.25,
+      "lng": 32.75,
+      "value_per_decade": -1.272667,
+      "significant_cells": 94
+     },
+     {
+      "lat": 47.25,
+      "lng": 32.75,
+      "value_per_decade": 1.161785,
+      "significant_cells": 88
+     },
+     {
+      "lat": 72.25,
+      "lng": 112.75,
+      "value_per_decade": 1.155318,
+      "significant_cells": 96
+     },
+     {
+      "lat": 67.25,
+      "lng": -102.25,
+      "value_per_decade": 0.928122,
+      "significant_cells": 56
+     }
+    ]
    },
    "verdict": "no statistically significant trend",
    "robust": false
@@ -340,7 +454,45 @@
    },
    "trend_map": {
     "share_significant": 0.418178,
-    "share_significant_increase": 0.389078
+    "share_significant_increase": 0.389078,
+    "hotspots": [
+     {
+      "lat": 82.25,
+      "lng": -107.25,
+      "value_per_decade": 1.632291,
+      "significant_cells": 100
+     },
+     {
+      "lat": -72.75,
+      "lng": 107.75,
+      "value_per_decade": -1.456838,
+      "significant_cells": 65
+     },
+     {
+      "lat": 72.25,
+      "lng": 62.75,
+      "value_per_decade": 1.181188,
+      "significant_cells": 100
+     },
+     {
+      "lat": -77.75,
+      "lng": -157.25,
+      "value_per_decade": -1.070902,
+      "significant_cells": 86
+     },
+     {
+      "lat": 47.25,
+      "lng": 27.75,
+      "value_per_decade": 0.929557,
+      "significant_cells": 100
+     },
+     {
+      "lat": 12.25,
+      "lng": 32.75,
+      "value_per_decade": -0.880182,
+      "significant_cells": 100
+     }
+    ]
    },
    "verdict": "significant increasing trend",
    "robust": false
@@ -424,7 +576,45 @@
    },
    "trend_map": {
     "share_significant": 0.383112,
-    "share_significant_increase": 0.306627
+    "share_significant_increase": 0.306627,
+    "hotspots": [
+     {
+      "lat": 7.25,
+      "lng": 22.75,
+      "value_per_decade": 7.084407,
+      "significant_cells": 100
+     },
+     {
+      "lat": 32.25,
+      "lng": 77.75,
+      "value_per_decade": 6.829614,
+      "significant_cells": 100
+     },
+     {
+      "lat": 22.25,
+      "lng": 97.75,
+      "value_per_decade": 5.980528,
+      "significant_cells": 99
+     },
+     {
+      "lat": 47.25,
+      "lng": 122.75,
+      "value_per_decade": 5.581803,
+      "significant_cells": 100
+     },
+     {
+      "lat": -7.75,
+      "lng": 32.75,
+      "value_per_decade": 5.108026,
+      "significant_cells": 100
+     },
+     {
+      "lat": 7.25,
+      "lng": -67.25,
+      "value_per_decade": -4.8681,
+      "significant_cells": 50
+     }
+    ]
    },
    "verdict": "significant increasing trend",
    "robust": true
