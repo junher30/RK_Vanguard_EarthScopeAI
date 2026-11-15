@@ -8,6 +8,8 @@ import { addActionListener, runActions, type AgentAction } from "@/lib/agentActi
 import { loadManifest, mapUrl, useLayer, type MapMode, type Manifest } from "@/lib/data";
 import { forecastUrl } from "@/lib/forecast";
 import { useAssistant } from "@/lib/assistant";
+import { cell, SHEETS, type SheetName } from "@/lib/mascotSprites";
+import { disposeDeep, lowPower, texture } from "@/lib/perf";
 import { useExplorer } from "@/lib/store";
 import { atmosphereMaterial, earthMaterial, sunDirection } from "@/lib/xr/earthShader";
 import { buzz, sfx } from "@/lib/xr/feedback";
@@ -77,29 +79,36 @@ class Panel {
     const c = this.ctx;
     this.buttons = [];
     c.clearRect(0, 0, this.W, this.H);
-    roundRect(c, 4, 4, this.W - 8, this.H - 8, 36);
-    c.fillStyle = "rgba(5,12,29,0.92)";
+    roundRect(c, 4, 4, this.W - 8, this.H - 8, 10);
+    c.fillStyle = "rgba(0,0,0,0.92)";
     c.fill();
+    c.lineWidth = 3;
+    c.strokeStyle = "#2b3036";
+    c.stroke();
+    // marcas de esquina, como en los paneles de la web
+    c.strokeStyle = "#e8e6e1";
     c.lineWidth = 4;
-    c.strokeStyle = "rgba(34,211,238,0.45)";
+    c.beginPath();
+    c.moveTo(4, 40); c.lineTo(4, 4); c.lineTo(40, 4);
+    c.moveTo(this.W - 40, this.H - 4); c.lineTo(this.W - 4, this.H - 4); c.lineTo(this.W - 4, this.H - 40);
     c.stroke();
   }
   title(text: string, y: number) {
     const c = this.ctx;
-    c.fillStyle = "#22d3ee";
-    c.font = "700 34px system-ui, sans-serif";
-    c.fillText(text.toUpperCase(), 40, y);
+    c.fillStyle = "#e8e6e1";
+    c.font = "600 38px 'IBM Plex Sans Condensed', system-ui, sans-serif";
+    c.fillText(text, 40, y);
   }
   label(text: string, y: number, size = 30, color = "#94a3b8", x = 40) {
     const c = this.ctx;
     c.fillStyle = color;
-    c.font = `500 ${size}px system-ui, sans-serif`;
+    c.font = `500 ${size}px 'IBM Plex Sans', system-ui, sans-serif`;
     c.fillText(text, x, y);
   }
   wrap(text: string, y: number, size = 32, color = "#e2e8f0", maxLines = 12) {
     const c = this.ctx;
     c.fillStyle = color;
-    c.font = `400 ${size}px system-ui, sans-serif`;
+    c.font = `400 ${size}px 'IBM Plex Sans', system-ui, sans-serif`;
     const maxW = this.W - 80;
     let line = "", lines = 0;
     for (const para of text.split("\n")) {
@@ -120,13 +129,13 @@ class Panel {
     this.buttons.push(b);
     roundRect(c, b.x, b.y, b.w, b.h, b.h / 2);
     const hov = this.hover === b.id;
-    c.fillStyle = b.on ? "#22d3ee" : hov ? "rgba(34,211,238,0.25)" : "rgba(255,255,255,0.06)";
+    c.fillStyle = b.on ? "#fc3d21" : hov ? "rgba(255,255,255,0.08)" : "#000";
     c.fill();
     c.lineWidth = 3;
-    c.strokeStyle = b.on ? "#22d3ee" : hov ? "#67e8f9" : "rgba(148,163,184,0.45)";
+    c.strokeStyle = b.on ? "#fc3d21" : hov ? "#e8e6e1" : "#2b3036";
     c.stroke();
-    c.fillStyle = b.on ? "#03111f" : "#e2e8f0";
-    c.font = `600 ${Math.round(b.h * 0.42)}px system-ui, sans-serif`;
+    c.fillStyle = b.on ? "#000" : "#e8e6e1";
+    c.font = `500 ${Math.round(b.h * 0.4)}px 'IBM Plex Sans', system-ui, sans-serif`;
     c.textAlign = "center";
     c.textBaseline = "middle";
     c.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 1);
@@ -152,12 +161,15 @@ function roundRect(c: CanvasRenderingContext2D, x: number, y: number, w: number,
 
 // --- el mundo
 export async function startXR(session: XRSession, mode: XRMode): Promise<() => void> {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: mode === "immersive-ar" });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  // en visores autónomos (Quest) todo va en versión ligera: texturas 2K, menos polígonos y partículas
+  const low = lowPower();
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: mode === "immersive-ar", powerPreference: "high-performance" });
+  renderer.setPixelRatio(1);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType("local-floor");
+  renderer.xr.setFoveation(low ? 1 : 0.5);
   renderer.domElement.style.display = "none";
   document.body.appendChild(renderer.domElement);
 
@@ -167,9 +179,9 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
 
   // fondo: estrellas en VR, la sala real en MR
   if (mode === "immersive-vr") {
-    const sky = loader.load("/textures/night-sky.png");
+    const sky = loader.load(texture("night-sky.png"));
     sky.colorSpace = THREE.SRGBColorSpace;
-    scene.add(new THREE.Mesh(new THREE.SphereGeometry(40, 48, 32), new THREE.MeshBasicMaterial({ map: sky, side: THREE.BackSide })));
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16), new THREE.MeshBasicMaterial({ map: sky, side: THREE.BackSide })));
   }
   scene.add(new THREE.HemisphereLight(0xdff6ff, 0x1a2a44, 1.4));
   const sun = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -181,9 +193,9 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   const globe = new THREE.Group();
   globe.position.copy(GLOBE_POS);
   scene.add(globe);
-  const tex = { day: loader.load("/textures/earth-blue-marble.jpg"), night: loader.load("/textures/earth-night.jpg") };
-  Object.values(tex).forEach((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; });
-  const water = loader.load("/textures/earth-water.png");
+  const tex = { day: loader.load(texture("earth-blue-marble.jpg")), night: loader.load(texture("earth-night.jpg")) };
+  Object.values(tex).forEach((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = low ? 4 : 8; });
+  const water = loader.load(texture("earth-water.png"));
   // el sol en su posición real de este momento
   const earthMat = earthMaterial(tex.day, tex.night, water);
   const sunLocal = new THREE.Vector3();
@@ -193,23 +205,23 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     earthMat.uniforms.sunDir.value.copy(sunLocal);
   };
   updateSun();
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(R, 128, 96), earthMat);
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(R, low ? 96 : 128, low ? 64 : 96), earthMat);
   globe.add(earth);
   const overlayMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.78, depthWrite: false });
-  const overlay = new THREE.Mesh(new THREE.SphereGeometry(R * 1.004, 96, 64), overlayMat);
+  const overlay = new THREE.Mesh(new THREE.SphereGeometry(R * 1.004, low ? 72 : 96, low ? 48 : 64), overlayMat);
   overlay.visible = false;
   globe.add(overlay);
-  const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.07, 64, 48), atmosphereMaterial());
+  const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.07, 48, 32), atmosphereMaterial());
   globe.add(atmo);
   // detalle NASA GIBS (convención de three-globe: se gira 90° para alinear con esta esfera)
-  const detail = createDetail(R * 1.0008, 3);
+  const detail = createDetail(R * 1.0008, 3, low ? 6 : 7);
   const detailHolder = new THREE.Group();
   detailHolder.rotation.y = Math.PI / 2;
   detailHolder.add(detail.obj);
   globe.add(detailHolder);
   detail.setImagery("day");
   // lluvia animada
-  const rain = new Rain(R, 2500, "xr");
+  const rain = new Rain(R, low ? 1200 : 2500, "xr");
   globe.add(rain);
   // satélites en su posición real, con su nombre flotando
   const satGroup = new THREE.Group();
@@ -255,8 +267,8 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   const satTimer = setInterval(updateSats, 1000);
   // marcador del punto elegido
   const marker = new THREE.Group();
-  marker.add(new THREE.Mesh(new THREE.SphereGeometry(R * 0.022, 16, 12), new THREE.MeshBasicMaterial({ color: 0x22d3ee })));
-  const ring = new THREE.Mesh(new THREE.RingGeometry(R * 0.04, R * 0.05, 40), new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide, transparent: true }));
+  marker.add(new THREE.Mesh(new THREE.SphereGeometry(R * 0.022, 16, 12), new THREE.MeshBasicMaterial({ color: 0xfc3d21 })));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(R * 0.04, R * 0.05, 40), new THREE.MeshBasicMaterial({ color: 0xfc3d21, side: THREE.DoubleSide, transparent: true }));
   marker.add(ring);
   marker.visible = false;
   globe.add(marker);
@@ -274,6 +286,42 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   info.mesh.rotation.y = -0.6;
   scene.add(info.mesh);
 
+  // mascota
+  const mascot = new THREE.Group();
+  mascot.position.set(0.5, 1.6, -0.5);
+  mascot.rotation.y = -0.6;
+  scene.add(mascot);
+  // mascota pixel art como holograma: sprites de 8 cuadros sobre un proyector
+  const sheets: Record<string, THREE.Texture> = {};
+  const texLoader = new THREE.TextureLoader();
+  for (const k of ["welcome", "idle", "talk"] as SheetName[]) {
+    const sh = SHEETS[k];
+    const tx = texLoader.load(sh.url);
+    tx.colorSpace = THREE.SRGBColorSpace;
+    tx.magFilter = THREE.NearestFilter;
+    tx.minFilter = THREE.NearestFilter;
+    tx.generateMipmaps = false;
+    tx.repeat.set(1 / sh.cols, 1 / sh.rows);
+    sheets[k] = tx;
+  }
+  const botMat = new THREE.MeshBasicMaterial({ map: sheets.welcome, transparent: true, alphaTest: 0.05, depthWrite: false, side: THREE.DoubleSide });
+  const bot = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), botMat);
+  bot.position.y = 0.2;
+  mascot.add(bot);
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xe8e6e1, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
+  const pad = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.12, 48), glowMat);
+  pad.rotation.x = -Math.PI / 2;
+  mascot.add(pad);
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.08, 0.36, 32, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0xe8e6e1, transparent: true, opacity: 0.04, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  beam.position.y = 0.18;
+  mascot.add(beam);
+  let botSheet: SheetName = "welcome", botFrame = 0, botNext = 0;
+  // trucos de movimiento: pasear, dar una vuelta, saltar
+  let trick: "none" | "wander" | "loop" | "hop" = "none", trickT0 = 0, trickNext = 6, wanderX = 0;
+  const tmpCam = new THREE.Vector3();
 
   // estado del panel de información
   const st = {
@@ -327,13 +375,13 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   const drawInfo = () => {
     info.begin();
     info.title("EarthScope AI", 70);
-    if (st.point) info.label(`${st.point.lat.toFixed(2)}°, ${st.point.lng.toFixed(2)}°`, 118, 28, "#67e8f9");
+    if (st.point) info.label(`${st.point.lat.toFixed(2)}°, ${st.point.lng.toFixed(2)}°`, 118, 28, "#ff8a73");
     info.wrap(st.head, 180, 40, "#ffffff", 2);
     info.wrap(st.listening ? "Escuchando…\n\nToca el botón otra vez para enviar." : st.busy ? "Analizando…" : st.body, 270, 32, "#e2e8f0", 11);
     // micrófono: tocar para hablar, tocar otra vez para enviar
     info.button({ id: "mic", x: 40, y: 790, w: 944, h: 96, label: st.listening ? "■ Enviar pregunta" : "● Hablar con EarthScope AI", on: st.listening });
     if (st.listening) {
-      info.ctx.fillStyle = "#22d3ee";
+      info.ctx.fillStyle = "#fc3d21";
       info.ctx.fillRect(60, 892, 904 * Math.min(1, st.level), 6);
     }
     QUICK.forEach(([id, label], i) => info.button({ id, x: 40 + (i % 2) * 476, y: 910 + Math.floor(i / 2) * 96, w: i === 2 ? 944 : 460, h: 80, label }));
@@ -342,6 +390,8 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
 
   const setRain = () => {
     const L = useLayer.getState();
+    // mientras avanzan los años no se recalcula (es pesado); se actualiza al pausar
+    if (L.playing) return;
     const meta = manifest?.variables.find((v) => v.key === L.variable);
     if (!meta || L.variable !== "precip_mm_day" || L.mode !== "value") { rain.setSource(null); return; }
     const url = L.year > 2024 ? forecastUrl(meta.key, L.year, meta.scale.value) : mapUrl("global", meta.key, "value", L.year);
@@ -355,18 +405,71 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     const L = useLayer.getState();
     setRain();
     if (!L.variable) { overlay.visible = false; return; }
-    const meta = manifest?.variables.find((v) => v.key === L.variable);
     // 2025-2030: la predicción de la red, servida por el backend
-    const url = L.year > 2024 && L.mode === "value" && meta
-      ? forecastUrl(L.variable, L.year, meta.scale.value) : mapUrl("global", L.variable, L.mode, L.year);
-    loader.load(url, (t) => {
-      t.colorSpace = THREE.SRGBColorSpace;
-      overlayMat.map?.dispose();
+    const url = urlFor(L.year);
+    const want = url;
+    layerTex(url).then((t) => {
+      if (want !== currentUrl()) return; // llegó tarde: ya se pidió otro año
+      const first = !overlayMat.map;
       overlayMat.map = t;
-      overlayMat.needsUpdate = true;
+      if (first) overlayMat.needsUpdate = true; // cambiar de textura no recompila el shader
       overlay.visible = true;
-    }, undefined, () => { overlay.visible = false; });
+    }).catch(() => { overlay.visible = false; });
+    prefetchYears();
   };
+
+  // texturas de las capas: se decodifican en otro hilo (ImageBitmap), se suben a la GPU de a una
+  // y se guardan, así al reproducir los años no se traba la imagen ni deja de seguir la cabeza
+  const bmpLoader = new THREE.ImageBitmapLoader();
+  bmpLoader.setOptions({ imageOrientation: "flipY", premultiplyAlpha: "none" });
+  const layerCache = new Map<string, Promise<THREE.Texture>>();
+  let cacheKey = "";
+  function layerTex(url: string): Promise<THREE.Texture> {
+    let p = layerCache.get(url);
+    if (!p) {
+      p = new Promise<THREE.Texture>((ok, bad) => bmpLoader.load(url, (bmp) => {
+        const t = new THREE.Texture(bmp as unknown as HTMLImageElement);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.flipY = false;
+        t.generateMipmaps = false;
+        t.minFilter = THREE.LinearFilter;
+        t.needsUpdate = true;
+        renderer.initTexture(t);
+        ok(t);
+      }, undefined, bad));
+      layerCache.set(url, p);
+    }
+    return p;
+  }
+  function urlFor(year: number) {
+    const L = useLayer.getState();
+    const meta = manifest?.variables.find((v) => v.key === L.variable);
+    if (!L.variable) return "";
+    return year > 2024 && L.mode === "value" && meta
+      ? forecastUrl(L.variable, year, meta.scale.value) : mapUrl("global", L.variable, L.mode, year);
+  }
+  const currentUrl = () => urlFor(useLayer.getState().year);
+  // al cambiar de capa o modo: se liberan las texturas de la anterior y se precargan todos los años, sin prisa
+  function prefetchYears() {
+    const L = useLayer.getState();
+    const key = `${L.variable}|${L.mode}`;
+    const meta0 = manifest?.variables.find((v) => v.key === L.variable);
+    if (key === cacheKey || !L.variable || L.mode === "trend" || !meta0) return;
+    cacheKey = key;
+    for (const [u, p] of layerCache) {
+      if (u === currentUrl()) continue;
+      p.then((t) => { if (overlayMat.map !== t) t.dispose(); }).catch(() => {});
+      layerCache.delete(u);
+    }
+    const meta = manifest?.variables.find((v) => v.key === L.variable);
+    const years = [...(meta?.years ?? [])];
+    let i = 0;
+    const next = () => {
+      if (!session_alive || cacheKey !== key || i >= years.length) return;
+      layerTex(urlFor(years[i++])).catch(() => {}).finally(() => setTimeout(next, 120));
+    };
+    next();
+  }
 
   const placeMarker = (lat: number, lng: number) => {
     marker.position.copy(latLngToVec(lat, lng, R * 1.01));
@@ -545,9 +648,10 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   // capa: se actualiza con el estado compartido de la web
   const unsubLayer = useLayer.subscribe((s, prev) => {
     if (s.variable !== prev.variable || s.mode !== prev.mode || s.year !== prev.year) setLayerTexture();
-    drawControl();
+    if (prev.playing && !s.playing) setRain();
+    controlDirty = true;
   });
-  loadManifest("global").then((m) => { manifest = m; setRain(); }).catch(() => {});
+  loadManifest("global").then((m) => { manifest = m; setRain(); prefetchYears(); }).catch(() => {});
 
   // mandos y manos
   const raycaster = new THREE.Raycaster();
@@ -607,7 +711,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     const ray = renderer.xr.getController(i);
     const line = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]),
-      new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.7 }),
+      new THREE.LineBasicMaterial({ color: 0xfc3d21, transparent: true, opacity: 0.7 }),
     );
     line.scale.z = 2;
     ray.add(line);
@@ -698,7 +802,10 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
       const v = new THREE.Vector3(dq.x / s0, dq.y / s0, dq.z / s0).multiplyScalar((dq.w < 0 ? -1 : 1) * ang / dt);
       dragVel.lerp(v, 0.35);
     } else dragVel.multiplyScalar(0.8);
-    t.moved += point.distanceTo(t.prev);
+    // solo cuenta el deslizamiento sobre la superficie, no el meter y sacar el dedo
+    const dp = point.clone().sub(t.prev);
+    dp.addScaledVector(d1, -dp.dot(d1));
+    t.moved += dp.length();
     t.prev.copy(point);
   }
   function endTouch(c: Ctl) {
@@ -706,20 +813,35 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     c.touch = null;
     if (!t) return;
     const dur = performance.now() - t.t0;
-    if (t.moved < 0.015 && dur < 600) {
+    // al soltar el dedo el globo se queda quieto, sin inercia
+    inertia.set(0, 0, 0);
+    dragVel.set(0, 0, 0);
+    if (t.moved < 0.02 && dur < 700) {
       // toque corto: si es el segundo seguido en el mismo sitio, se marca el lugar
       const now = performance.now();
-      if (lastTap && now - lastTap.t < 700 && lastTap.p.distanceTo(t.start) < 0.05) {
+      if (lastTap && now - lastTap.t < 800 && lastTap.p.distanceTo(t.start) < 0.06) {
         lastTap = null;
         selectPoint(t.start);
       } else {
         lastTap = { t: now, p: t.start.clone() };
+        tapRing(t.start);
         sfx.hover();
       }
-    } else if (dragVel.length() > 0.2) {
-      inertia.copy(dragVel).clampLength(0, 4);
     }
   }
+  // anillo que se ilumina al primer toque: confirma que se registró
+  const tapMesh = new THREE.Mesh(
+    new THREE.RingGeometry(0.008, 0.012, 32),
+    new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }),
+  );
+  scene.add(tapMesh);
+  let tapAt = -1;
+  function tapRing(p: THREE.Vector3) {
+    tapMesh.position.copy(p);
+    tapMesh.lookAt(p.clone().add(p.clone().sub(globe.position)));
+    tapAt = performance.now();
+  }
+
   const raySphere = (c: Ctl) => {
     tmpM.identity().extractRotation(c.ray.matrixWorld);
     const o = new THREE.Vector3().setFromMatrixPosition(c.ray.matrixWorld);
@@ -732,7 +854,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   if (mode === "immersive-vr") {
     const floor = new THREE.Mesh(
       new THREE.RingGeometry(0.55, 0.6, 96),
-      new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ color: 0xfc3d21, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0.002;
@@ -745,11 +867,13 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
 
   // animación
   const clock = new THREE.Clock();
-  let lastDetail = 0, lastSun = 0;
+  let lastDetail = 0, lastSun = 0, lastCtrl = 0;
+  let controlDirty = false;
   const yAxis = new THREE.Vector3(0, 1, 0);
   const q = new THREE.Quaternion();
   const tmp = new THREE.Vector3();
   renderer.setAnimationLoop(() => {
+    if (controlDirty && clock.elapsedTime - lastCtrl > 0.25) { controlDirty = false; lastCtrl = clock.elapsedTime; drawControl(); }
     const dt = Math.min(0.05, clock.getDelta());
     const t = clock.elapsedTime;
     for (const c of ctls) c.hand.update();
@@ -853,7 +977,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
         // dedo sobre el globo: tocar y deslizar lo gira; doble toque marca el lugar
         if (!c.touch && surf < 0.005 && !held.length) startTouch(c, tip, false);
         else if (c.touch && !c.touch.byRay) {
-          if (surf < 0.02) dragTo(c, tip, dt);
+          if (surf < 0.012) dragTo(c, tip, dt);
           else endTouch(c);
         }
         c.tipGlow.visible = near;
@@ -905,10 +1029,67 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     const head = new THREE.Vector3().setFromMatrixPosition(xrCam.matrixWorld);
     const alt = Math.max(0.02, (head.distanceTo(globe.position) - globeRadius()) / globeRadius());
     rain.update(dt, alt);
-    detail.obj.visible = alt < 0.9;
+    const near = alt < 0.9;
+    if (detail.obj.visible && !near) { try { detail.obj.clearTiles(); } catch { /* */ } }
+    detail.obj.visible = near;
     if (detail.obj.visible && t - lastDetail > 0.3) { lastDetail = t; detail.obj.updatePov(xrCam); }
+    // anillo del primer toque: crece y se desvanece en medio segundo
+    if (tapAt >= 0) {
+      const k = (performance.now() - tapAt) / 500;
+      (tapMesh.material as THREE.MeshBasicMaterial).opacity = k < 1 ? 0.9 * (1 - k) : 0;
+      tapMesh.scale.setScalar(1 + k * 1.5);
+      if (k >= 1) tapAt = -1;
+    }
     // pulso del marcador
     ring.scale.setScalar(1 + 0.25 * Math.sin(t * 4));
+    // mascota según su estado
+    const mood = useAssistant.getState().mood;
+    if (mood === "greet" && botSheet !== "welcome") { botSheet = "welcome"; botFrame = 0; }
+    if (t > botNext) {
+      botNext = t + 0.125;
+      botFrame = (botFrame + 1) % SHEETS[botSheet].frames;
+      if (botFrame === 0 && botSheet === "welcome") botSheet = "idle";
+      if (botSheet !== "welcome") {
+        const want: SheetName = mood === "talking" ? "talk" : "idle";
+        if (want !== botSheet) { botSheet = want; botFrame = 0; }
+      }
+      const sh = SHEETS[botSheet], c = cell(botSheet, botFrame);
+      botMat.map = sheets[botSheet];
+      botMat.map.offset.set(c.col / sh.cols, 1 - (c.row + 1) / sh.rows);
+    }
+    // de vez en cuando hace un truco si está tranquilo
+    if (trick === "none" && mood === "idle" && t > trickNext) {
+      trick = (["wander", "loop", "hop", "wander"] as const)[Math.floor(Math.random() * 4)];
+      trickT0 = t;
+      wanderX = (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.12);
+    }
+    const k = t - trickT0;
+    let bx = 0, by = 0, rz = 0;
+    if (trick === "wander") {
+      const p = Math.min(1, k / 4);
+      bx = wanderX * Math.sin(p * Math.PI);
+      by = 0.03 * Math.sin(p * Math.PI);
+      rz = -0.25 * Math.cos(p * Math.PI) * Math.sign(wanderX) * Math.sin(p * Math.PI);
+      if (p >= 1) trick = "none";
+    } else if (trick === "loop") {
+      const p = Math.min(1, k / 1.2);
+      by = 0.08 * Math.sin(p * Math.PI);
+      rz = p * Math.PI * 2;
+      if (p >= 1) trick = "none";
+    } else if (trick === "hop") {
+      const p = Math.min(1, k / 1);
+      by = Math.abs(Math.sin(p * Math.PI * 2)) * 0.06 * (1 - p * 0.5);
+      if (p >= 1) trick = "none";
+    }
+    if (trick === "none" && t > trickNext) trickNext = t + 6 + Math.random() * 6;
+    if (mood !== "idle") trick = "none";
+    // siempre de frente al usuario, flotando
+    mascot.lookAt(camera.getWorldPosition(tmpCam).setY(mascot.position.y));
+    bot.position.x = bx;
+    bot.position.y = 0.2 + by + Math.sin(t * 1.6) * 0.01 + (mood === "talking" ? Math.abs(Math.sin(t * 6)) * 0.012 : 0);
+    bot.rotation.z = rz + (mood === "thinking" ? Math.sin(t * 2.2) * 0.08 : mood === "pointing" ? 0.25 : 0);
+    botMat.opacity = Math.random() < 0.01 ? 0.7 : 0.95;
+    glowMat.opacity = (mood === "thinking" ? 0.55 : 0.35) + Math.sin(t * 3) * 0.08;
     renderer.render(scene, camera);
   });
 
@@ -930,7 +1111,13 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     offActions();
     unsubLayer();
     try { speechSynthesis.cancel(); } catch { /* */ }
+    // libera todo de la GPU: sin esto cada entrada a VR dejaba texturas colgando hasta que el visor se caía
+    try { detail.obj.clearTiles(); } catch { /* */ }
+    for (const p of layerCache.values()) p.then((t) => t.dispose()).catch(() => {});
+    layerCache.clear();
+    disposeDeep(scene);
     renderer.dispose();
+    renderer.forceContextLoss();
     renderer.domElement.remove();
   };
 }

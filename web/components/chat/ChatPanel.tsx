@@ -18,7 +18,7 @@ function inline(text: string, key: string) {
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g);
   return parts.map((p, i) => {
     if (p.startsWith("**") && p.endsWith("**")) return <b key={`${key}${i}`}>{p.slice(2, -2)}</b>;
-    if (p.startsWith("`") && p.endsWith("`")) return <code key={`${key}${i}`} className="font-mono text-cyan">{p.slice(1, -1)}</code>;
+    if (p.startsWith("`") && p.endsWith("`")) return <code key={`${key}${i}`} className="font-mono text-signal">{p.slice(1, -1)}</code>;
     if (p.length > 2 && p.startsWith("*") && p.endsWith("*")) return <i key={`${key}${i}`}>{p.slice(1, -1)}</i>;
     return p;
   });
@@ -102,8 +102,9 @@ export default function ChatPanel() {
       // señala el globo si lo movió, luego habla un rato según lo largo de la respuesta
       const talk = Math.min(7000, 1200 + reply.length * 35);
       if (actions?.some((a) => a.type === "fly" || a.type === "layer")) {
-        assistant.pulse("pointing", 1400);
-        setTimeout(() => useAssistant.getState().mood === "pointing" && useAssistant.getState().pulse("talking", talk), 1400);
+        // se queda señalando el globo y luego habla allí mismo; al terminar vuelve a su lugar
+        assistant.setMood("pointing");
+        setTimeout(() => useAssistant.getState().mood === "pointing" && useAssistant.getState().pulse("talking", talk), 1600);
       } else {
         assistant.pulse("talking", talk);
       }
@@ -185,7 +186,7 @@ export default function ChatPanel() {
             className="glass absolute right-0 top-full z-40 mt-3 !bg-[#050c1d] flex max-h-[min(70dvh,620px)] w-full flex-col sm:w-[380px]"
             aria-label="EarthScope assistant"
           >
-            <header className="flex items-center gap-2 border-b border-line/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-cyan">
+            <header className="flex items-center gap-2 border-b border-line/60 px-4 py-3 text-xs font-semibold tracking-normal text-signal">
               <Bot className="size-4" /> {t("Asistente EarthScope", "EarthScope assistant")}
             </header>
 
@@ -208,10 +209,10 @@ export default function ChatPanel() {
                   key={i}
                   className={
                     m.role === "user"
-                      ? "ml-8 rounded-xl bg-cyan/15 px-3 py-2"
+                      ? "ml-8 rounded-[3px] bg-signal/15 px-3 py-2"
                       : m.role === "error"
-                        ? "rounded-xl border border-red-400/40 bg-red-400/10 px-3 py-2 text-red-200"
-                        : "mr-4 rounded-xl bg-white/5 px-3 py-2"
+                        ? "rounded-[3px] border border-red-400/40 bg-red-400/10 px-3 py-2 text-red-200"
+                        : "mr-4 rounded-[3px] bg-white/5 px-3 py-2"
                   }
                 >
                   {m.role === "agent" ? <Markdown text={m.text} /> : m.text}
@@ -233,7 +234,7 @@ export default function ChatPanel() {
                 onChange={(e) => setText(e.target.value)}
                 placeholder={t("Pregunta lo que quieras…", "Ask anything…")}
                 maxLength={4000}
-                className="min-w-0 flex-1 rounded-xl border border-line/60 bg-transparent px-3 py-2 text-sm outline-none focus:border-cyan"
+                className="min-w-0 flex-1 rounded-[3px] border border-line/60 bg-transparent px-3 py-2 text-sm outline-none focus:border-signal"
               />
               <button
                 type="button"

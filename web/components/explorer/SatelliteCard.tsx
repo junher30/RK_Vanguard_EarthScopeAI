@@ -54,15 +54,15 @@ export default function SatelliteCard({
       </div>
       {pos && (
         <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-          <div className="rounded-lg bg-white/5 p-2">
+          <div className="rounded-[2px] bg-white/5 p-2">
             <dt className="text-muted">{t("Posición", "Position")}</dt>
             <dd className="font-mono">{Math.abs(pos.lat).toFixed(1)}°{pos.lat >= 0 ? "N" : "S"} {Math.abs(pos.lng).toFixed(1)}°{pos.lng >= 0 ? "E" : "W"}</dd>
           </div>
-          <div className="rounded-lg bg-white/5 p-2">
+          <div className="rounded-[2px] bg-white/5 p-2">
             <dt className="text-muted">{t("Altitud", "Altitude")}</dt>
             <dd className="font-mono">{Math.round(pos.altKm)} km</dd>
           </div>
-          <div className="rounded-lg bg-white/5 p-2">
+          <div className="rounded-[2px] bg-white/5 p-2">
             <dt className="text-muted">{t("Velocidad", "Speed")}</dt>
             <dd className="font-mono">{Math.round(pos.speedKmh).toLocaleString()} km/h</dd>
           </div>

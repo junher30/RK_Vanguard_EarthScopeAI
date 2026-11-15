@@ -62,13 +62,13 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
       className="glass absolute bottom-4 left-4 right-4 z-30 mx-auto max-w-[620px] p-3 sm:right-[72px] sm:p-4 lg:right-4"
     >
       <div className="mb-2.5 flex items-center gap-2">
-        <div className="flex rounded-lg border border-line p-0.5 text-xs">
+        <div className="flex rounded-[2px] border border-line p-0.5 text-xs">
           {([["global", "Global", <Globe key="g" className="size-3.5" />], ["amazon", t("Amazonía central", "Central Amazon"), <MapPinned key="a" className="size-3.5" />]] as [Scope, string, React.ReactNode][]).map(
             ([k, label, icon]) => (
               <button
                 key={k}
                 onClick={() => { setPlaying(false); setScope(k); }}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${scope === k ? "bg-panel text-cyan" : "text-muted hover:text-ink"}`}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${scope === k ? "bg-panel text-signal" : "text-muted hover:text-ink"}`}
                 aria-pressed={scope === k}
               >
                 {icon} {label}
@@ -80,7 +80,7 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{t("Capa NASA", "NASA layer")}</span>
+        <span className="mr-1 text-[11px] font-semibold tracking-normal text-muted">{t("Capa NASA", "NASA layer")}</span>
         {!manifest && <span className="text-xs text-muted">{t("Aún no disponible aquí.", "Not available for this scope yet.")}</span>}
         {manifest?.variables.map((v) => {
           const on = v.key === variable;
@@ -89,8 +89,8 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
               key={v.key}
               whileTap={{ scale: 0.95 }}
               onClick={() => setVariable(on ? null : v.key)}
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                on ? ACCENT[v.key] : "border-line text-ink hover:border-cyan"
+              className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1.5 text-xs font-medium transition-colors ${
+                on ? ACCENT[v.key] : "border-line text-ink hover:border-signal"
               }`}
               aria-pressed={on}
             >
@@ -120,7 +120,7 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={() => setPlaying(!playing)}
-              className="grid size-9 shrink-0 place-items-center rounded-full bg-cyan text-[#03121f] shadow-[0_0_18px_rgba(34,211,238,.45)]"
+              className="grid size-9 shrink-0 place-items-center rounded-[2px] bg-signal text-black"
               aria-label={playing ? t("Pausar", "Pause timeline") : t("Reproducir", "Play timeline")}
             >
               {playing ? <Pause className="size-4" /> : <Play className="size-4 translate-x-px" />}
@@ -135,16 +135,16 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
               onChange={(e) => { setPlaying(false); setYear(+e.target.value); }}
               className={`timeline w-full ${isFuture ? "timeline-future" : ""}`}
               style={future.length ? {
-                background: `linear-gradient(90deg, rgba(34,211,238,.6) 0%, rgba(30,58,95,.9) ${((realLast - first) / (last - first)) * 100}%, rgba(217,70,239,.75) ${((realLast - first) / (last - first)) * 100}%, rgba(217,70,239,.25) 100%)`,
+                background: `linear-gradient(90deg, rgba(252,61,33,.6) 0%, rgba(30,58,95,.9) ${((realLast - first) / (last - first)) * 100}%, rgba(157,180,255,.75) ${((realLast - first) / (last - first)) * 100}%, rgba(157,180,255,.25) 100%)`,
               } : undefined}
               aria-label={t("Año", "Year")}
             />
             {future.length > 0 && (
-              <div className="pointer-events-none mt-0.5 flex font-mono text-[9px] uppercase tracking-wider">
+              <div className="pointer-events-none mt-0.5 flex font-mono text-[10px]">
                 <span className="text-muted" style={{ width: `${((realLast - first) / (last - first)) * 100}%` }}>
                   {t("Datos NASA", "NASA data")} {first}–{realLast}
                 </span>
-                <span className="flex-1 border-l border-dashed border-fuchsia-400/60 pl-1 text-fuchsia-300">
+                <span className="flex-1 border-l border-dashed border-forecast/60 pl-1 text-forecast">
                   {t("Proyección IA", "AI projection")}
                 </span>
               </div>
@@ -154,7 +154,7 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
               key={year}
               initial={{ y: -6, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className={`w-12 text-right font-mono text-lg font-semibold tabular-nums ${isFuture ? "text-fuchsia-300 drop-shadow-[0_0_8px_rgba(217,70,239,.7)]" : ""}`}
+              className={`w-12 text-right font-mono text-lg font-semibold tabular-nums ${isFuture ? "text-forecast " : ""}`}
             >
               {year}
             </motion.span>
@@ -165,11 +165,11 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-3 flex items-start gap-2 rounded-xl border border-fuchsia-400/40 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-100"
+              className="mt-3 flex items-start gap-2 rounded-[3px] border border-forecast/40 bg-forecast/10 px-3 py-2 text-xs text-forecast"
             >
-              <Sparkles className="mt-0.5 size-3.5 shrink-0 text-fuchsia-300" />
+              <Sparkles className="mt-0.5 size-3.5 shrink-0 text-forecast" />
               <span>
-                <b className="text-fuchsia-300">{t("Proyección experimental de la red neuronal", "Experimental neural-network projection")} {year}.</b>{" "}
+                <b className="text-forecast">{t("Proyección experimental de la red neuronal", "Experimental neural-network projection")} {year}.</b>{" "}
                 {t("No es una medición ni un pronóstico: está validada solo a un mes vista y no incluye escenarios de emisiones. Donde el color se desvanece, la red está menos segura.",
                   "Not a measurement or a forecast: validated only one month ahead, with no emission scenarios. Where colors fade, the network is less certain.")}
               </span>
@@ -177,12 +177,12 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <div className="flex rounded-lg border border-line p-0.5 text-xs">
+            <div className="flex rounded-[2px] border border-line p-0.5 text-xs">
               {modes.map((m) => (
                 <button
                   key={m}
                   onClick={() => { setMode(m); if (m !== "value" && year > realLast) setYear(realLast); }}
-                  className={`rounded-md px-2.5 py-1 transition-colors ${mode === m ? "bg-panel text-cyan" : "text-muted hover:text-ink"}`}
+                  className={`rounded-md px-2.5 py-1 transition-colors ${mode === m ? "bg-panel text-signal" : "text-muted hover:text-ink"}`}
                 >
                   {m === "value" ? t("Media anual", "Annual mean") : m === "anomaly" ? t("Anomalía", "Anomaly") : t("Tendencia", "Trend")}
                 </button>
@@ -190,7 +190,7 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
             </div>
             <button
               onClick={() => { setPlaying(false); setCompare(true); }}
-              className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs text-ink transition-colors hover:border-cyan hover:text-cyan"
+              className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs text-ink transition-colors hover:border-signal hover:text-signal"
               title={t("Comparar dos años con una cortina", "Compare two years with a slider")}
             >
               <ArrowLeftRight className="size-3.5" /> {t("Antes / después", "Before / after")}
@@ -219,7 +219,7 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
           </div>
           {/* ¿qué estoy viendo? */}
           <p className="mt-2 flex gap-1.5 text-[11px] leading-snug text-muted">
-            <Info className="mt-px size-3.5 shrink-0 text-cyan" />
+            <Info className="mt-px size-3.5 shrink-0 text-signal" />
             <span>{modeHint(meta.key, mode, year, first, realLast, es)}</span>
           </p>
         </motion.div>

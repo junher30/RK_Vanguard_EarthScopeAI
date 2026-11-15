@@ -18,7 +18,7 @@ export default function StepRail({ active }: { active: number }) {
             key={s}
             aria-current={on ? "step" : undefined}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
-              on ? "border-cyan text-cyan shadow-[0_0_12px_rgba(34,211,238,.25)]"
+              on ? "border-signal text-signal shadow-[0_0_12px_rgba(252,61,33,.25)]"
               : done ? "border-green/50 text-green"
               : "border-line text-muted"
             }`}

@@ -23,8 +23,8 @@ export default function EventCard({ ev, onClose }: { ev: GeoEvent; onClose: () =
       role="dialog"
       aria-label={ev.title}
     >
-      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em]" style={{ color: st.color }}>
-        <span className="size-2 animate-pulse rounded-full" style={{ background: st.color, boxShadow: `0 0 10px ${st.color}` }} />
+      <div className="flex items-center gap-2 font-mono text-[10px] tracking-normal" style={{ color: st.color }}>
+        <span className="size-2 animate-pulse rounded-full" style={{ background: st.color }} />
         {eventKindName(ev.kind)} · {t("activo", "active")}
         <button onClick={onClose} className="ml-auto text-muted hover:text-ink" aria-label={t("Cerrar", "Close")}>
           <X className="size-4" />
@@ -63,7 +63,7 @@ export function EventLegend({ events, status }: { events: GeoEvent[]; status: st
       exit={{ opacity: 0, x: -10 }}
       className="holo-panel absolute bottom-4 left-4 z-20 hidden max-w-[260px] px-3 py-2.5 xl:block"
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+      <p className="font-mono text-[10px] tracking-normal text-signal">
         {t("Planeta en vivo", "Live planet")} · NASA EONET
       </p>
       {status === "loading" && <p className="mt-1 text-xs text-muted">{t("Cargando eventos…", "Loading events…")}</p>}
@@ -74,7 +74,7 @@ export function EventLegend({ events, status }: { events: GeoEvent[]; status: st
           <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
             {[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => (
               <li key={k} className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full" style={{ background: eventStyle(k).color, boxShadow: `0 0 6px ${eventStyle(k).color}` }} />
+                <span className="size-2 rounded-full" style={{ background: eventStyle(k).color }} />
                 {eventKindName(k)} <span className="font-mono text-muted">{n}</span>
               </li>
             ))}

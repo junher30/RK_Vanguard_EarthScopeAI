@@ -14,6 +14,7 @@ import { DATA_REGIONS, regionAt, regionCenter, regionOutline } from "@/lib/regio
 import { midpoint, toFeature, type LatLng } from "@/lib/geo";
 import type { AreaFeature, Draw, Selection } from "@/lib/store";
 import { fmt, useProbe, valueOfColor, type Scale } from "@/lib/data";
+import { disposeDeep, lowPower, texture as texUrl } from "@/lib/perf";
 
 type CountryFeature = GeoJSON.Feature<GeoJSON.Geometry, { name: string }>;
 
@@ -26,12 +27,15 @@ export type GlobeApi = {
 
 export type Imagery = "day" | "night";
 
-const TEX = {
-  day: "/textures/earth-blue-marble.jpg",
-  night: "/textures/earth-night.jpg",
-  bump: "/textures/earth-topology.png",
-  water: "/textures/earth-water.png",
-};
+// en visores y celulares se usan texturas de 2K en vez de 4K (4 veces menos memoria de video)
+const tex = () => ({
+  day: texUrl("earth-blue-marble.jpg"),
+  night: texUrl("earth-night.jpg"),
+  bump: texUrl("earth-topology.png"),
+  water: texUrl("earth-water.png"),
+});
+let texCache: ReturnType<typeof tex> | null = null;
+const getTex = () => (texCache ??= tex());
 
 export type DataOverlay = {
   url: string;
@@ -186,7 +190,7 @@ export default function EarthGlobe({
   // océanos con brillo: el mapa de agua hace de máscara especular
   const globeMat = useMemo(() => {
     const m = new THREE.MeshPhongMaterial({ specular: new THREE.Color(0x3a4a5a), shininess: 14 });
-    new THREE.TextureLoader().load(TEX.water, (t) => { m.specularMap = t; m.needsUpdate = true; });
+    new THREE.TextureLoader().load(getTex().water, (t) => { m.specularMap = t; m.needsUpdate = true; });
     return m;
   }, []);
   const imageryRef = useRef(imagery);
@@ -198,7 +202,17 @@ export default function EarthGlobe({
     imageryRef.current = imagery;
     detail.current?.setImagery(imagery);
   }, [imagery]);
-  useEffect(() => () => cancelAnimationFrame(fx.current), []);
+  useEffect(() => () => {
+    cancelAnimationFrame(fx.current);
+    // al desmontar (por ejemplo al entrar en VR) devuelve la memoria de video
+    const g = ref.current;
+    if (!g) return;
+    try {
+      disposeDeep(g.scene());
+      g.renderer().dispose();
+      g.renderer().forceContextLoss();
+    } catch { /* */ }
+  }, []);
 
   // lluvia: gotas donde la capa de precipitación marca más lluvia
   const rainUrl = overlay?.rain ? overlay.url : null;
@@ -336,8 +350,8 @@ export default function EarthGlobe({
   }, [closed, shape, drawing, drawValid]);
   const polys = useMemo<object[]>(() => (userPoly ? [...countries, userPoly] : countries), [countries, userPoly]);
 
-  const edgeColor = !closed ? "#e2e8f0" : drawing && !drawValid ? "#f87171" : "#22d3ee";
-  const fillColor = drawing && !drawValid ? "rgba(248,113,113,.18)" : "rgba(34,211,238,.16)";
+  const edgeColor = !closed ? "#e2e8f0" : drawing && !drawValid ? "#f87171" : "#fc3d21";
+  const fillColor = drawing && !drawValid ? "rgba(248,113,113,.18)" : "rgba(252,61,33,.16)";
 
   const local = (e: React.PointerEvent | React.MouseEvent) => {
     const r = wrap.current!.getBoundingClientRect();
@@ -458,11 +472,13 @@ export default function EarthGlobe({
     c.maxDistance = 600;
     c.zoomSpeed = 0.8;
     // detalle NASA GIBS al acercarse y lluvia animada
-    const det = createDetail(100.08, 2);
+    const low = lowPower();
+    g.renderer().setPixelRatio(Math.min(window.devicePixelRatio, low ? 1 : 2));
+    const det = createDetail(100.08, 2, low ? 6 : undefined);
     det.setImagery(imageryRef.current);
     g.scene().add(det.obj);
     detail.current = det;
-    const r = new Rain(100, 4500);
+    const r = new Rain(100, low ? 1500 : 4500);
     g.scene().add(r);
     rain.current = r;
     let last = performance.now(), lastPov = 0;
@@ -540,12 +556,12 @@ export default function EarthGlobe({
       height={size.h}
       onGlobeReady={handleReady}
       globeMaterial={globeMat}
-      globeImageUrl={imagery === "day" ? TEX.day : TEX.night}
-      bumpImageUrl={TEX.bump}
+      globeImageUrl={imagery === "day" ? getTex().day : getTex().night}
+      bumpImageUrl={getTex().bump}
       backgroundColor="rgba(0,0,0,0)"
       showAtmosphere
-      atmosphereColor="#22d3ee"
-      atmosphereAltitude={0.2}
+      atmosphereColor="#8fa6bf"
+      atmosphereAltitude={0.12}
       polygonsData={polys}
       polygonAltitude={(d) => (isUser(d) ? 0.009 : d === hover ? 0.012 : 0.004)}
       polygonCapColor={(d) => (isUser(d) ? fillColor : d === hover ? "rgba(52,211,153,.22)" : "rgba(0,0,0,0)")}
@@ -575,8 +591,8 @@ export default function EarthGlobe({
       pathPointLng={(p) => (p as [number, number])[1]}
       pathColor={(p: object) => {
         const o = p as PathObj;
-        if (o.kind === "orbit" || o.kind === "storm") return [`${o.color ?? "#22d3ee"}00`, o.color ?? "#22d3ee"];
-        return o.kind === "user" ? edgeColor : ["#22d3ee", "#67e8f9"];
+        if (o.kind === "orbit" || o.kind === "storm") return [`${o.color ?? "#fc3d21"}00`, o.color ?? "#fc3d21"];
+        return o.kind === "user" ? edgeColor : ["#e8e6e1", "#e8e6e1"];
       }}
       pathStroke={(p) => ((p as PathObj).kind === "orbit" || (p as PathObj).kind === "storm" ? 1.2 : (p as PathObj).kind === "user" ? 2 : 2.4)}
       pathDashLength={(p) => ((p as PathObj).kind === "orbit" || (p as PathObj).kind === "storm" ? 1 : (p as PathObj).kind === "user" ? (closed ? 1 : 0.04) : 0.08)}
@@ -603,9 +619,9 @@ export default function EarthGlobe({
       pointLng="lng"
       pointColor={(p) => {
         const d = p as Pt;
-        if (d.kind === "mid") return "rgba(34,211,238,.55)";
-        if (d.kind === "vertex") return d.i === 0 && draw.status === "drawing" ? "#22d3ee" : "#f8fafc";
-        return "#22d3ee";
+        if (d.kind === "mid") return "rgba(252,61,33,.55)";
+        if (d.kind === "vertex") return d.i === 0 && draw.status === "drawing" ? "#fc3d21" : "#f8fafc";
+        return "#fc3d21";
       }}
       pointAltitude={(p) => ((p as Pt).kind === "mark" ? 0.025 * Math.max(0.08, zoomK) : 0.012)}
       pointRadius={(p) => {
@@ -618,14 +634,14 @@ export default function EarthGlobe({
       ringsData={marks}
       ringLat="lat"
       ringLng="lng"
-      ringColor={() => (t: number) => `rgba(34,211,238,${1 - t})`}
+      ringColor={() => (t: number) => `rgba(252,61,33,${1 - t})`}
       ringMaxRadius={4.5 * Math.max(0.08, zoomK)}
       ringPropagationSpeed={2.5}
       ringRepeatPeriod={900}
     />
     {probe && overlay && (
       <div
-        className="pointer-events-none absolute z-20 rounded-lg border border-white/15 bg-[#04101cee] px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur"
+        className="pointer-events-none absolute z-20 rounded-[2px] border border-white/15 bg-[#04101cee] px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur"
         style={{ left: probe.x + 16, top: probe.y + 14 }}
       >
         {probe.value === null ? (

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { AlertTriangle, ExternalLink, Hexagon, Loader2, MapPin, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileSpreadsheet, Hexagon, Image as ImageIcon, Loader2, MapPin, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import {
   Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -15,6 +15,7 @@ import { forecastPoint, useForecast, type PointForecast } from "@/lib/forecast";
 import { Flame, Sparkles } from "lucide-react";
 import { namedHotspots, type Hotspot } from "@/lib/hotspots";
 import { runActions } from "@/lib/agentActions";
+import { downloadChartPng, downloadCsv } from "@/lib/exportData";
 
 const COLOR: Record<string, string> = {
   precip_mm_day: "#3b82f6", evi: "#34d399", lst_day_c: "#f87171", t2m_c: "#fb923c", rh2m_pct: "#2dd4bf",
@@ -67,6 +68,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
 
   // predicción de la red en el punto (o el centro del área)
   const fc = useForecast();
+  const chartBox = useRef<HTMLDivElement>(null);
   const center = area ? (area.properties.centroid as { lat: number; lng: number } | undefined) : zone ? { lat: zone.lat, lng: zone.lng } : undefined;
   const pfKey = fc.available && fc.variables.includes(meta.key) && scope === "global" && useArea && center
     ? `${meta.key}|${center.lat.toFixed(3)}|${center.lng.toFixed(3)}` : "";
@@ -87,16 +89,16 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
   const header = (
     <>
       {target && (
-        <div className="mb-3 flex rounded-lg border border-line p-0.5 text-xs">
+        <div className="mb-3 flex rounded-[2px] border border-line p-0.5 text-xs">
           <button
             onClick={() => setSource("area")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 ${source === "area" ? "bg-panel text-cyan" : "text-muted hover:text-ink"}`}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 ${source === "area" ? "bg-panel text-signal" : "text-muted hover:text-ink"}`}
           >
             {area ? <Hexagon className="size-3.5" /> : <MapPin className="size-3.5" />} {area ? tt("Tu área", "Your area") : tt("Tu punto", "Your point")}
           </button>
           <button
             onClick={() => setSource("scope")}
-            className={`flex-1 rounded-md px-2 py-1 ${source === "scope" ? "bg-panel text-cyan" : "text-muted hover:text-ink"}`}
+            className={`flex-1 rounded-md px-2 py-1 ${source === "scope" ? "bg-panel text-signal" : "text-muted hover:text-ink"}`}
           >
             {scope === "global" ? tt("Todo el planeta", "Whole planet") : tt("Amazonía central", "Central Amazon")}
           </button>
@@ -124,7 +126,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
           <Loader2 className="size-4 animate-spin" /> {tt(`Analizando ${varLabel(meta.key, meta.label).toLowerCase()} en tu zona…`, `Analysing ${meta.label.toLowerCase()} in your area…`)}
         </div>
       ) : (
-        <div className={`flex gap-2 rounded-xl border p-3 text-xs ${areaState.status === "empty" ? "border-line text-muted" : "border-amber/40 bg-amber/10 text-amber"}`}>
+        <div className={`flex gap-2 rounded-[3px] border p-3 text-xs ${areaState.status === "empty" ? "border-line text-muted" : "border-amber/40 bg-amber/10 text-amber"}`}>
           <AlertTriangle className="mt-0.5 size-4 shrink-0" /> <span>{areaState.message}</span>
         </div>
       ),
@@ -132,7 +134,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
   }
   if (!series || series.variable !== meta.key) return null;
 
-  const color = COLOR[meta.key] ?? "#22d3ee";
+  const color = COLOR[meta.key] ?? "#fc3d21";
   const t = series.trend;
   const line = new Map(series.trend_line);
   const realLast = series.annual[series.annual.length - 1]?.[0] ?? 2024;
@@ -151,6 +153,37 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
   const TrendIcon = !sig ? Minus : up ? TrendingUp : TrendingDown;
   const d = meta.decimals;
 
+  // descargas: nombre de archivo con variable y lugar
+  const where = area ? "area" : zone ? `${zone.lat.toFixed(2)}_${zone.lng.toFixed(2)}` : scope;
+  const base = `earthscope_${meta.key}_${where}`;
+  const placeText = useArea ? areaLabel : regionLabel;
+  function savePng() {
+    if (!chartBox.current) return;
+    downloadChartPng(
+      `${base}.png`, chartBox.current,
+      `${varLabel(meta.key, series!.label)} · ${placeText}`,
+      `${units(series!.units)} · ${tt("media anual", "annual mean")} ${series!.trend.period[0].slice(0, 4)}–${realLast}${fut.length ? ` · ${tt("predicción IA", "AI forecast")} ${fut[0].year}–${fut[fut.length - 1].year}` : ""} · ${verdict(t.verdict)}`,
+      `${tt("Fuente", "Source")}: ${series!.dataset} · ${series!.doi}`,
+    );
+  }
+  function saveCsv() {
+    const s0 = series!;
+    const metaRows: [string, string][] = [
+      [tt("Variable", "Variable"), `${varLabel(meta.key, s0.label)} (${s0.units})`],
+      [tt("Lugar", "Place"), placeText],
+      [tt("Fuente", "Source"), `${s0.dataset} ${s0.doi}`],
+      [tt("Tendencia", "Trend"), `${verdict(t.verdict)}; Sen ${fmt(t.sen_slope_per_year, 4)} ${s0.units}/${tt("año", "yr")}; ${tt("cambio", "change")} ${fmt(t.sen_change_pct_of_mean, 1)}%; Mann-Kendall p=${fmt(t.seasonal_mann_kendall.p_value, 4)}`],
+      [tt("Generado", "Generated"), `EarthScope AI · ${new Date().toISOString().slice(0, 10)}`],
+    ];
+    const line2 = new Map(s0.trend_line);
+    const rows: unknown[][] = [
+      ...s0.monthly.map(([d0, v]) => [d0.slice(0, 7), tt("mensual", "monthly"), v, "", ""]),
+      ...s0.annual.map(([y, v]) => [y, tt("media anual", "annual mean"), v, line2.get(y) ?? "", ""]),
+      ...fut.map((p) => [p.year, tt("predicción IA", "AI forecast"), p.value, "", p.spread ?? ""]),
+    ];
+    downloadCsv(`${base}.csv`, metaRows, [tt("periodo", "period"), tt("tipo", "kind"), tt("valor", "value"), tt("tendencia_sen", "sen_trend"), tt("dispersion_ia", "ai_spread")], rows);
+  }
+
   return (
     <motion.aside
       key={meta.key}
@@ -161,20 +194,28 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
       className="glass absolute left-4 top-24 z-20 hidden max-h-[calc(100dvh-260px)] w-[380px] overflow-y-auto p-5 md:block"
     >
       {header}
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color }}>
-        {varLabel(meta.key, series.label)}
-      </p>
+      <div className="flex items-center gap-2">
+        <p className="flex-1 text-[11px] font-semibold tracking-normal" style={{ color }}>
+          {varLabel(meta.key, series.label)}
+        </p>
+        <button onClick={savePng} className="btn !gap-1 !px-2 !py-1 text-[11px]" title={tt("Descargar la gráfica (PNG)", "Download the chart (PNG)")}>
+          <ImageIcon className="size-3.5" /> PNG
+        </button>
+        <button onClick={saveCsv} className="btn !gap-1 !px-2 !py-1 text-[11px]" title={tt("Descargar los datos (CSV, abre en Excel)", "Download the data (CSV, opens in Excel)")}>
+          <FileSpreadsheet className="size-3.5" /> CSV
+        </button>
+      </div>
       <p className="text-xs text-muted">
         {useArea ? areaLabel : regionLabel}
         {useArea && areaState.status === "ok" && (
           <span className="ml-1">· {areaState.info.cells} {tt(areaState.info.cells === 1 ? "celda" : "celdas", areaState.info.cells === 1 ? "cell" : "cells")} {tt("de", "of")} {areaState.info.grid}</span>
         )}
         {meta.kind === "reanalysis" && (
-          <span className="ml-2 rounded-full border border-amber/40 px-1.5 py-px text-[10px] text-amber">{tt("reanálisis", "reanalysis")}</span>
+          <span className="ml-2 rounded-[2px] border border-amber/40 px-1.5 py-px text-[10px] text-amber">{tt("reanálisis", "reanalysis")}</span>
         )}
       </p>
       {mode === "trend" && meta.trend_map && (
-        <div className="mt-3 rounded-xl border border-line bg-deep/60 p-3 text-xs text-muted">
+        <div className="mt-3 rounded-[3px] border border-line bg-deep/60 p-3 text-xs text-muted">
           <b className="text-ink">{tt("Mapa de tendencia", "Trend map")} {series.trend.period[0].slice(0, 4)}–{series.trend.period[1].slice(0, 4)}:</b>{" "}
           {tt(`Pendiente de Sen por década en cada celda de 0.5°. Las celdas brillantes son significativas (Mann-Kendall, p < 0.05); las tenues no. En el mapa, el ${Math.round(meta.trend_map.share_significant * 100)}% del área muestra una tendencia significativa (${Math.round(meta.trend_map.share_significant_increase * 100)}% creciente). Por puro azar sería ≈5%.`,
             `Sen slope per decade in each 0.5° cell. Bright cells are significant (Mann-Kendall, p < 0.05); faded cells are not. Across the map, ${Math.round(meta.trend_map.share_significant * 100)}% of the area shows a significant trend (${Math.round(meta.trend_map.share_significant_increase * 100)}% increasing). By chance alone ≈5% would.`)}
@@ -202,8 +243,8 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
       </p>
 
       {futNow && (
-        <div className="mt-2 flex gap-2 rounded-xl border border-fuchsia-400/40 bg-fuchsia-500/10 p-2.5 text-xs text-fuchsia-100">
-          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-fuchsia-300" />
+        <div className="mt-2 flex gap-2 rounded-[3px] border border-forecast/40 bg-forecast/10 p-2.5 text-xs text-forecast">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-forecast" />
           <span>
             {tt("Proyección experimental de la red neuronal EarthScope", "EarthScope neural network projection (experimental)")}
             {futNow.spread !== null && <> · ± {fmt(futNow.spread, d)} {units(series.units)} {tt("de dispersión entre modelos", "spread across models")}</>}
@@ -211,7 +252,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
         </div>
       )}
 
-      <div className="mt-3 h-40 -ml-3">
+      <div ref={chartBox} className="mt-3 h-40 -ml-3">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
@@ -244,15 +285,15 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
             />
             <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#fill-${meta.key})`} dot={false} activeDot={{ r: 4 }} isAnimationActive />
             <Line type="linear" dataKey="trend" stroke="#e2e8f0" strokeDasharray="5 4" strokeWidth={1.4} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="forecast" stroke="#e879f9" strokeDasharray="4 3" strokeWidth={2} dot={{ r: 2, fill: "#e879f9" }} isAnimationActive={false} connectNulls />
-            <ReferenceLine x={year} stroke={futNow ? "#e879f9" : "#22d3ee"} strokeWidth={1.5} />
+            <Line type="monotone" dataKey="forecast" stroke="#9db4ff" strokeDasharray="4 3" strokeWidth={2} dot={{ r: 2, fill: "#9db4ff" }} isAnimationActive={false} connectNulls />
+            <ReferenceLine x={year} stroke={futNow ? "#9db4ff" : "#fc3d21"} strokeWidth={1.5} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <p className="-mt-1 text-[10px] text-muted">{tt("Toca la gráfica para ir a un año · punteada blanca: tendencia de Sen", "Click the chart to jump to a year · white dashed: Sen slope trend")}{fut.length > 0 && tt(" · fucsia: proyección IA experimental", " · magenta: experimental AI projection")}</p>
+      <p className="-mt-1 text-[10px] text-muted">{tt("Toca la gráfica para ir a un año · punteada blanca: tendencia de Sen", "Click the chart to jump to a year · white dashed: Sen slope trend")}{fut.length > 0 && tt(" · azul: proyección IA experimental", " · blue: experimental AI projection")}</p>
 
       <div
-        className={`mt-4 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${
+        className={`mt-4 flex items-center gap-2 rounded-[3px] border px-3 py-2 text-sm font-semibold ${
           sig ? (up ? "border-amber/40 bg-amber/10 text-amber" : "border-red/40 bg-red/10 text-red") : "border-line bg-line/30 text-muted"
         }`}
       >
@@ -272,7 +313,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
       </dl>
 
       {!series.robust && (
-        <div className="mt-3 flex gap-2 rounded-xl border border-amber/40 bg-amber/10 p-3 text-xs text-amber">
+        <div className="mt-3 flex gap-2 rounded-[3px] border border-amber/40 bg-amber/10 p-3 text-xs text-amber">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>
             {tt("No es robusto", "Not robust")}: {series.robustness.filter((r) => r.verdict !== t.verdict).map((r) => `${r.test.toLowerCase()} → ${verdict(r.verdict)} (p=${fmt(r.p_value, 2)})`).join("; ")}.{" "}
@@ -283,7 +324,7 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
       )}
 
       <p className="mt-3 text-xs text-muted">{series.caveats[0]}</p>
-      <a href={series.doi} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-1 text-xs text-cyan hover:underline">
+      <a href={series.doi} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-1 text-xs text-signal hover:underline">
         {series.dataset} <ExternalLink className="size-3" />
       </a>
     </motion.aside>
@@ -295,7 +336,7 @@ function PlainSummary({ varKey, verdictText, slope, unitsText, decimals, robust 
 }) {
   const es = useLang((st) => st.lang) === "es";
   return (
-    <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs leading-relaxed text-ink">
+    <p className="mt-2 rounded-[2px] bg-white/5 px-3 py-2 text-xs leading-relaxed text-ink">
       {plainTrend(varKey, verdictText, slope, unitsText, decimals, robust, es)}
     </p>
   );
@@ -305,8 +346,8 @@ function PlainSummary({ varKey, verdictText, slope, unitsText, decimals, robust 
 function Stat({ k, v, u, help }: { k: string; v: string; u: string; help?: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative rounded-lg border border-line/70 bg-deep/60 px-2 py-2">
-      <dt className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted">
+    <div className="relative rounded-[2px] border border-line/70 bg-deep/60 px-2 py-2">
+      <dt className="flex items-center justify-center gap-1 font-mono text-[10px] text-muted">
         {k}
         {help && (
           <button
@@ -314,7 +355,7 @@ function Stat({ k, v, u, help }: { k: string; v: string; u: string; help?: strin
             onClick={() => setOpen((o) => !o)}
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
-            className="grid size-3.5 place-items-center rounded-full border border-muted/60 text-[8px] leading-none hover:border-cyan hover:text-cyan"
+            className="grid size-3.5 place-items-center rounded-full border border-muted/60 text-[8px] leading-none hover:border-signal hover:text-signal"
             aria-label={help}
           >
             ?
@@ -322,7 +363,7 @@ function Stat({ k, v, u, help }: { k: string; v: string; u: string; help?: strin
         )}
       </dt>
       {open && help && (
-        <span className="absolute bottom-full left-1/2 z-10 mb-1 w-48 -translate-x-1/2 rounded-md border border-line bg-[#04101c] p-2 text-left text-[11px] normal-case leading-snug tracking-normal text-ink shadow-lg">
+        <span className="absolute bottom-full left-1/2 z-10 mb-1 w-48 -translate-x-1/2 rounded-[2px] border border-line bg-space p-2 text-left text-[11px] leading-snug text-ink shadow-lg">
           {help}
         </span>
       )}
@@ -343,8 +384,8 @@ function Hotspots({ meta }: { meta: VariableMeta }) {
   }, [meta]);
   const items = list?.key === meta.key ? list.items : null;
   return (
-    <div className="mt-3 rounded-xl border border-line bg-deep/60 p-3">
-      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan">
+    <div className="mt-3 rounded-[3px] border border-line bg-deep/60 p-3">
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-normal text-signal">
         <Flame className="size-3.5" /> {tt("Dónde más cambió", "Where it changed most")}
       </p>
       {!items ? (
@@ -355,7 +396,7 @@ function Hotspots({ meta }: { meta: VariableMeta }) {
             <li key={i}>
               <button
                 onClick={() => runActions([{ type: "fly", lat: h.lat, lng: h.lng, altitude: 1.2 }, { type: "select", lat: h.lat, lng: h.lng }, { type: "layer", variable: meta.key, mode: "trend" }])}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs hover:bg-panel"
+                className="flex w-full items-center gap-2 rounded-[2px] px-2 py-1 text-left text-xs hover:bg-panel"
               >
                 <span className="font-mono text-muted">{i + 1}</span>
                 <span className="flex-1 truncate">{h.place ?? tt("Océano", "Ocean")} <span className="text-muted">· {h.lat.toFixed(0)}°, {h.lng.toFixed(0)}°</span></span>

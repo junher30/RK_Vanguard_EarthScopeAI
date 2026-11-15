@@ -81,12 +81,12 @@ export default function CompareView({
     >
       <div className="holo-panel w-full max-w-5xl p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <ArrowLeftRight className="size-4 text-cyan" />
+          <ArrowLeftRight className="size-4 text-signal" />
           <b className="text-ink">{t("Antes / después", "Before / after")} · {varShort(meta.key, meta.short)}</b>
           <div className="flex rounded-lg border border-line p-0.5 text-xs">
             {(["value", "anomaly"] as MapMode[]).map((m) => (
               <button key={m} onClick={() => setMode(m)}
-                className={`rounded-md px-2.5 py-1 ${mode === m ? "bg-panel text-cyan" : "text-muted hover:text-ink"}`}>
+                className={`rounded-md px-2.5 py-1 ${mode === m ? "bg-panel text-signal" : "text-muted hover:text-ink"}`}>
                 {m === "value" ? t("Media anual", "Annual mean") : t("Anomalía", "Anomaly")}
               </button>
             ))}
@@ -146,7 +146,7 @@ export default function CompareView({
               <>
                 {t(`Promedio ${where}: `, `Average over ${where}: `)}
                 <b>{fmt(va, meta.decimals)} {u}</b> ({a}) → <b>{fmt(vb, meta.decimals)} {u}</b> ({b}),{" "}
-                <b className={diff === 0 ? "" : "text-cyan"}>{diff >= 0 ? "+" : ""}{fmt(diff, meta.decimals)} {u}</b>.{" "}
+                <b className={diff === 0 ? "" : "text-signal"}>{diff >= 0 ? "+" : ""}{fmt(diff, meta.decimals)} {u}</b>.{" "}
                 <span className="text-muted">
                   {t("Arrastra la línea para comparar zona por zona. Dos años sueltos pueden diferir por variabilidad natural; la tendencia de 24 años está en el panel de análisis.",
                     "Drag the line to compare place by place. Two single years can differ by natural variability; the 24-year trend is in the analysis panel.")}

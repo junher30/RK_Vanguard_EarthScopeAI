@@ -25,14 +25,14 @@ export default function StoryPlayer() {
             className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/95 to-black/0" />
 
           {/* capítulo */}
-          <div className="absolute left-6 top-[2.2vh] flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em]" style={{ color: story.color }}>
+          <div className="absolute left-6 top-[2.2vh] flex items-center gap-3 font-mono text-[11px] tracking-normal" style={{ color: story.color }}>
             <Clapperboard className="size-4" />
             {t(story.es, story.en)}
             <span className="text-white/40">· {String(s.step + 1).padStart(2, "0")}/{String(story.steps.length).padStart(2, "0")}</span>
           </div>
           {variable && mode !== "trend" && (
             <motion.div key={year} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
-              className={`absolute right-6 top-[1.6vh] font-mono text-3xl font-semibold tabular-nums ${year > 2024 ? "text-fuchsia-300" : "text-white"}`}>
+              className={`absolute right-6 top-[1.6vh] font-mono text-3xl font-semibold tabular-nums ${year > 2024 ? "text-forecast" : "text-white"}`}>
               {year}
             </motion.div>
           )}
@@ -48,10 +48,10 @@ export default function StoryPlayer() {
                 transition={{ duration: 0.6 }}
                 className="absolute left-6 top-[16vh] sm:left-10"
               >
-                <div className="text-6xl font-semibold tracking-tight sm:text-7xl" style={{ color: story.color, textShadow: `0 0 40px ${story.color}66` }}>
+                <div className="font-[family-name:var(--font-display)] text-7xl font-semibold tracking-tight sm:text-8xl" style={{ color: story.color }}>
                   {s.stat.value}
                 </div>
-                <div className="mt-1 max-w-[260px] font-mono text-xs uppercase tracking-[0.2em] text-white/70">{t(s.stat.es, s.stat.en)}</div>
+                <div className="mt-1 max-w-[260px] font-mono text-xs tracking-normal text-white/70">{t(s.stat.es, s.stat.en)}</div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -85,7 +85,7 @@ export default function StoryPlayer() {
               {s.paused ? <Play className="size-4" /> : <Pause className="size-4" />}
             </button>
             <button onClick={s.next} className="text-white/70 hover:text-white" aria-label={t("Siguiente", "Next")}><SkipForward className="size-4" /></button>
-            <button onClick={s.stop} className="ml-2 flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs text-white/80 hover:border-white/50" aria-label={t("Salir de la historia", "Exit story")}>
+            <button onClick={s.stop} className="ml-2 flex items-center gap-1 rounded-[2px] border border-white/20 px-3 py-1 text-xs text-white/80 hover:border-white/50" aria-label={t("Salir de la historia", "Exit story")}>
               <X className="size-3.5" /> {t("Salir", "Exit")}
             </button>
           </div>
@@ -103,7 +103,7 @@ export function StoryMenu() {
       {s.menu && (
         <motion.div
           key="menu"
-          className="absolute inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+          className="absolute inset-0 z-50 grid place-items-center bg-black/85 p-4"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={() => s.setMenu(false)}
         >
@@ -114,7 +114,7 @@ export function StoryMenu() {
             role="dialog"
             aria-label={t("Historias", "Stories")}
           >
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-cyan">
+            <div className="flex items-center gap-2 font-mono text-[11px] tracking-normal text-signal">
               <Clapperboard className="size-4" /> {t("Modo historia", "Story mode")}
               <button onClick={() => s.setMenu(false)} className="ml-auto text-muted hover:text-ink" aria-label={t("Cerrar", "Close")}><X className="size-4" /></button>
             </div>
@@ -125,13 +125,13 @@ export function StoryMenu() {
                 <button
                   key={st.id}
                   onClick={() => s.start(st.id)}
-                  className="group relative overflow-hidden rounded-xl border border-line bg-deep/70 p-4 text-left transition hover:border-[var(--c)]"
+                  className="group relative overflow-hidden rounded-[3px] border border-line bg-deep/70 p-4 text-left transition hover:border-[var(--c)]"
                   style={{ ["--c" as string]: st.color }}
                 >
-                  <span className="absolute inset-y-0 left-0 w-1" style={{ background: st.color, boxShadow: `0 0 18px ${st.color}` }} />
+                  <span className="absolute inset-y-0 left-0 w-1" style={{ background: st.color }} />
                   <span className="block text-base font-semibold group-hover:text-[var(--c)]">{t(st.es, st.en)}</span>
                   <span className="mt-1 block text-xs text-muted">{t(st.subEs, st.subEn)}</span>
-                  <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted group-hover:text-[var(--c)]">
+                  <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] tracking-normal text-muted group-hover:text-[var(--c)]">
                     <Play className="size-3" /> {t("Reproducir", "Play")} · {st.steps.length} {t("escenas", "scenes")}
                   </span>
                 </button>

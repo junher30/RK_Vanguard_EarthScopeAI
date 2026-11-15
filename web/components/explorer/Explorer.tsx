@@ -14,9 +14,8 @@ import InsightPanel from "@/components/data/InsightPanel";
 import { loadManifest, mapUrl, useLayer, type Manifest } from "@/lib/data";
 import { DATA_REGIONS, fmtCoord, regionCenter } from "@/lib/regions";
 import { useExplorer } from "@/lib/store";
-import StepRail from "./StepRail";
 import ChatPanel from "@/components/chat/ChatPanel";
-import AssistantButton from "@/components/chat/AssistantButton";
+import Mascot from "@/components/chat/Mascot";
 import CallBar, { CallButton } from "@/components/chat/CallBar";
 import Tutorial from "@/components/chat/Tutorial";
 import XRButtons from "@/components/xr/XRButtons";
@@ -31,9 +30,12 @@ import { useEvents, type GeoEvent } from "@/lib/events";
 import EventCard, { EventLegend } from "./EventCard";
 import StoryPlayer, { StoryMenu } from "@/components/story/StoryPlayer";
 import { useStory } from "@/lib/stories";
+import { useXRState } from "@/lib/xr/state";
+import { lowPower } from "@/lib/perf";
 import { applyShared, shareUrl } from "@/lib/share";
 import Methodology from "./Methodology";
 import EasterEggs from "./EasterEggs";
+import { Readouts, Reticle } from "./Console";
 
 const EarthGlobe = dynamic(() => import("@/components/globe/EarthGlobe"), { ssr: false });
 
@@ -42,7 +44,11 @@ const ease = [0.22, 1, 0.36, 1] as const;
 export default function Explorer() {
   const { selection, zone, area, draw, select, clear, confirm } = useExplorer();
   const t = useT();
-  useEffect(() => { initLang(); loadForecast(); }, []);
+  useEffect(() => {
+    initLang();
+    loadForecast();
+    if (lowPower()) document.documentElement.dataset.lite = "1";
+  }, []);
   const fc = useForecast();
   const api = useRef<GlobeApi | null>(null);
   const [ready, setReady] = useState(false);
@@ -55,6 +61,7 @@ export default function Explorer() {
   const [satFilter, setSatFilter] = useState<SatFilter>(DEFAULT_SAT_FILTER);
   const ev = useEvents();
   const storyOn = useStory((st) => !!st.story);
+  const xrOn = useXRState((st) => st.active);
   useEffect(() => useStory.subscribe((st, prev) => { if (st.story && !prev.story) setIntro(false); }), []);
   const [event, setEvent] = useState<GeoEvent | null>(null);
   const [method, setMethod] = useState(false);
@@ -368,31 +375,34 @@ export default function Explorer() {
   const isConfirmed = !!zone && !!selection && zone.lat === selection.lat && zone.lng === selection.lng;
 
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-space bg-[url(/textures/night-sky.png)] bg-cover bg-center text-ink">
+    <main className="relative h-dvh w-full overflow-hidden bg-space space-bg bg-cover bg-center text-ink">
       <motion.div
         className="absolute inset-0"
         aria-label="3D globe"
         animate={{ x: !wide ? "0%" : intro ? "22%" : variable ? "0%" : "-12%" }}
         transition={{ duration: 1.2, ease }}
       >
-        <EarthGlobe
-          selection={selection}
-          overlay={overlay}
-          draw={draw}
-          drawValid={drawValid}
-          area={area}
-          onVertex={onVertex}
-          imagery={imagery}
-          onSelect={onSelect}
-          onReady={onReady}
-          onBordersError={onBordersError}
-          showSats={showSats}
-          satVisible={satVisible}
-          selectedSat={sat?.norad ?? null}
-          events={ev.on ? ev.events : undefined}
-          onEvent={(e) => { setEvent(e); setSat(null); setIntro(false); api.current?.setSpin(false); setSpinning(false); api.current?.flyTo(e.lat, e.lng, 1.3); }}
-          onSatellite={(s) => { setSat(s); setFollow(false); setIntro(false); api.current?.setSpin(false); setSpinning(false); }}
-        />
+        <Reticle />
+        {!xrOn && (
+          <EarthGlobe
+            selection={selection}
+            overlay={overlay}
+            draw={draw}
+            drawValid={drawValid}
+            area={area}
+            onVertex={onVertex}
+            imagery={imagery}
+            onSelect={onSelect}
+            onReady={onReady}
+            onBordersError={onBordersError}
+            showSats={showSats}
+            satVisible={satVisible}
+            selectedSat={sat?.norad ?? null}
+            events={ev.on ? ev.events : undefined}
+            onEvent={(e) => { setEvent(e); setSat(null); setIntro(false); api.current?.setSpin(false); setSpinning(false); api.current?.flyTo(e.lat, e.lng, 1.3); }}
+            onSatellite={(s) => { setSat(s); setFollow(false); setIntro(false); api.current?.setSpin(false); setSpinning(false); }}
+          />
+        )}
       </motion.div>
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(3,8,20,.85)_100%)]" />
@@ -407,8 +417,8 @@ export default function Explorer() {
           >
             <div className="flex flex-col items-center gap-4 text-muted">
               <span className="relative flex size-4">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-cyan opacity-60" />
-                <span className="relative inline-flex size-4 rounded-full bg-cyan" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-signal opacity-60" />
+                <span className="relative inline-flex size-4 rounded-full bg-signal" />
               </span>
               <span className="text-sm tracking-wide">{t("Cargando la Tierra…", "Loading Earth…")}</span>
             </div>
@@ -419,7 +429,7 @@ export default function Explorer() {
       <StoryPlayer />
       <StoryMenu />
       <Methodology open={method} onClose={() => setMethod(false)} manifest={manifest} />
-      {!intro && ready && !storyOn && <AssistantButton />}
+      {!intro && ready && !storyOn && <Mascot />}
       {!intro && ready && <Tutorial />}
       {!intro && <CallBar />}
 
@@ -427,15 +437,15 @@ export default function Explorer() {
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.3, ease }}
-        className="glass absolute inset-x-4 top-4 z-30 flex items-center justify-between gap-4 px-5 py-3"
+        className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-line bg-black/90 px-5"
       >
-        <div className="flex items-center gap-3">
-          <span className="size-3 rounded-full bg-cyan shadow-[0_0_14px_#22d3ee]" />
-          <b className="tracking-wide">EarthScope AI</b>
-          <span className="hidden text-sm text-muted xl:inline">{t("Laboratorio de investigación planetaria", "Planetary Investigation Lab")}</span>
+        <div className="flex items-baseline gap-3">
+          <b className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight">EarthScope</b>
+          <span className="font-mono text-[11px] text-signal">RK-26</span>
+          <span className="hidden text-sm text-muted 2xl:inline">{t("Laboratorio de investigación planetaria", "Planetary Investigation Lab")}</span>
         </div>
-        <div className="flex items-center gap-3">
-          <StepRail active={zone || area ? 2 : 1} />
+        <Readouts />
+        <div className="flex items-center gap-2">
           <LangToggle />
           <XRButtons />
           {!intro && (
@@ -458,16 +468,15 @@ export default function Explorer() {
             transition={{ duration: 0.9, ease }}
             className="absolute bottom-24 left-6 z-20 max-w-xl sm:left-12 sm:bottom-auto sm:top-1/3"
           >
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-cyan">
-              NASA Space Apps 2026 · Earth System Trend Detective
+            <p className="mb-4 font-mono text-xs text-muted">
+              NASA Space Apps 2026 <span className="text-signal">/</span> Earth System Trend Detective
             </p>
-            <h1 className="text-4xl font-semibold leading-tight sm:text-6xl">
-              {t("No solo observes cómo cambia la Tierra.", "Don't just observe Earth's changes.")}
-              <span className="block bg-gradient-to-r from-cyan via-green to-blue bg-clip-text text-transparent">
-                {t("Investígalo.", "Investigate them.")}
-              </span>
+            <h1 className="font-[family-name:var(--font-display)] text-5xl font-semibold leading-[0.95] tracking-tight sm:text-7xl">
+              {t("La Tierra cambió.", "Earth has changed.")}
+              <br />
+              {t("Aquí está la evidencia.", "Here is the evidence.")}
             </h1>
-            <p className="mt-4 max-w-md text-muted">
+            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted">
               {t("Elige cualquier lugar del planeta, detecta tendencias, explora una proyección experimental de IA y comprueba cada conclusión con datos de satélites NASA.",
                 "Pick any place on the planet, detect trends, explore an experimental AI projection and trace every conclusion back to NASA satellite data.")}
             </p>
@@ -485,6 +494,12 @@ export default function Explorer() {
             <div className="mt-4">
               <XRButtons big />
             </div>
+            <dl className="mt-8 grid max-w-md grid-cols-4 border-t border-line pt-3 font-mono text-[11px] text-muted">
+              <div><dt>{t("Periodo", "Period")}</dt><dd className="mt-1 text-sm text-ink">2001–24</dd></div>
+              <div><dt>{t("Variables", "Variables")}</dt><dd className="mt-1 text-sm text-ink">5 NASA</dd></div>
+              <div><dt>{t("Grilla", "Grid")}</dt><dd className="mt-1 text-sm text-ink">0.5°</dd></div>
+              <div><dt>{t("Proyección", "Forecast")}</dt><dd className="mt-1 text-sm text-forecast">2030</dd></div>
+            </dl>
           </motion.section>
         )}
       </AnimatePresence>
@@ -514,7 +529,7 @@ export default function Explorer() {
                 onClear={clear}
               />
             ) : (<>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan">
+            <div className="flex items-center gap-2 text-xs font-semibold tracking-normal text-signal">
               <MapPin className="size-4" /> {t("Paso 1 · Lugar de estudio", "Step 1 · Study location")}
             </div>
 
@@ -523,8 +538,8 @@ export default function Explorer() {
                 <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <h2 className="mt-3 text-lg font-semibold">{t("Haz clic en cualquier lugar de la Tierra", "Click anywhere on Earth")}</h2>
                   <p className="mt-1 text-sm text-muted">
-                    {t("Arrastra para girar · rueda o pellizca para acercar. El recuadro cian marca el caso de estudio en alta resolución.",
-                      "Drag to rotate · scroll or pinch to zoom. The dashed cyan box marks the high-resolution case study.")}
+                    {t("Arrastra para girar · rueda o pellizca para acercar. El recuadro punteado marca el caso de estudio en alta resolución.",
+                      "Drag to rotate · scroll or pinch to zoom. The dashed box marks the high-resolution case study.")}
                   </p>
                   <div className="mt-4 flex gap-2">
                     <button onClick={startDraw} className="btn-primary flex-1 justify-center">
@@ -563,7 +578,7 @@ export default function Explorer() {
                     />
                     <Row
                       k={t("Cobertura NASA", "NASA data coverage")}
-                      v={<Tag tone="cyan">{region ? t("Global + 0.1° alta resolución", "Global + 0.1° high-res") : "Global 0.5° · 2001–2024"}</Tag>}
+                      v={<Tag tone="signal">{region ? t("Global + 0.1° alta resolución", "Global + 0.1° high-res") : "Global 0.5° · 2001–2024"}</Tag>}
                     />
                   </dl>
                   <p className="mt-3 text-xs text-muted">
@@ -578,7 +593,7 @@ export default function Explorer() {
                       <motion.div
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-green/40 bg-green/10 px-4 py-2.5 text-sm font-semibold text-green"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-[3px] border border-green/40 bg-green/10 px-4 py-2.5 text-sm font-semibold text-green"
                       >
                         <Check className="size-4" /> {t("Zona confirmada", "Study zone confirmed")}
                       </motion.div>
@@ -623,7 +638,7 @@ export default function Explorer() {
             onChange={(e) => setCoords(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && goToCoords()}
             placeholder={t("ej. -3.1, -60.0", "e.g. -3.1, -60.0")}
-            className="w-full rounded-lg border border-line bg-deep px-3 py-2 font-mono text-sm outline-none transition focus:border-cyan"
+            className="w-full rounded-[2px] border border-line bg-deep px-3 py-2 font-mono text-sm outline-none transition focus:border-signal"
           />
           <button onClick={goToCoords} className="btn px-3" aria-label={t("Ir", "Go")}>
             <Search className="size-4" />
@@ -642,7 +657,7 @@ export default function Explorer() {
         initial={{ x: 30, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.7, delay: 0.6, ease }}
-        className="absolute right-4 top-24 z-20 flex flex-col gap-1.5 sm:top-auto sm:bottom-4"
+        className={`absolute right-4 top-24 z-20 flex flex-col gap-1.5 sm:top-auto sm:bottom-4 ${storyOn ? "hidden" : ""}`}
       >
         <IconBtn label={t("Acercar", "Zoom in")} onClick={() => api.current?.zoom(0.7)}><Plus className="size-5" /></IconBtn>
         <IconBtn label={t("Alejar", "Zoom out")} onClick={() => api.current?.zoom(1.4)}><Minus className="size-5" /></IconBtn>
@@ -656,7 +671,7 @@ export default function Explorer() {
           {imagery === "day" ? <Moon className="size-5" /> : <Sun className="size-5" />}
         </IconBtn>
         <IconBtn label={showSats ? t("Ocultar satélites", "Hide satellites") : t("Mostrar satélites", "Show satellites")} onClick={() => { setShowSats((v) => !v); setSat(null); setFollow(false); }}>
-          <Satellite className={`size-5 ${showSats ? "text-cyan" : ""}`} />
+          <Satellite className={`size-5 ${showSats ? "text-signal" : ""}`} />
         </IconBtn>
         <IconBtn
           label={ev.on ? t("Ocultar eventos en vivo", "Hide live events") : t("Eventos naturales en vivo (NASA)", "Live natural events (NASA)")}
@@ -752,13 +767,13 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 const tones = {
   green: "bg-green/15 text-green",
   blue: "bg-blue/20 text-blue-300",
-  cyan: "bg-cyan/15 text-cyan",
+  signal: "bg-signal/15 text-signal",
   amber: "bg-amber/15 text-amber",
   muted: "bg-line/50 text-muted",
 } as const;
 
 function Tag({ tone, children }: { tone: keyof typeof tones; children: React.ReactNode }) {
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tones[tone]}`}>{children}</span>;
+  return <span className={`rounded-[2px] px-2 py-0.5 font-mono text-[11px] ${tones[tone]}`}>{children}</span>;
 }
 
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
@@ -769,7 +784,7 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="glass grid size-10 place-items-center !rounded-xl text-ink transition-colors hover:border-cyan hover:text-cyan"
+      className="glass grid size-10 place-items-center !rounded-[3px] text-ink transition-colors hover:border-signal hover:text-signal"
     >
       {children}
     </motion.button>
