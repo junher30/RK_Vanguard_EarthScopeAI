@@ -29,6 +29,7 @@ flowchart TB
 
 | Documento | Para qué |
 |---|---|
+| [manual/MANUAL_EARTHSCOPE_AI.pdf](manual/MANUAL_EARTHSCOPE_AI.pdf) | **Manual del proyecto (PDF)**: qué es, el tema, de dónde vienen los datos, recorrido por la interfaz, tecnologías y ciencia. Para alguien que llega nuevo. Se regenera con `manual/build_manual.py` |
 | [referencia/DOCUMENTACION_TECNICA.md](referencia/DOCUMENTACION_TECNICA.md) | Documento técnico principal: reto, reglas del evento, métodos, resultados, decisiones D1–D12, declaración de IA |
 | [referencia/DATOS_GLOBALES.md](referencia/DATOS_GLOBALES.md) | Datos de todo el planeta (0,5°), MERRA-2, mapas de tendencia y API de análisis de áreas |
 | Simulaciones experimentales (próxima fase) | Reglas, modelos y API en `docs/SIMULACIONES.md` del repo backend; cliente tipado en `web/lib/simulate.ts` |

@@ -66,7 +66,7 @@ export default function CompareView({
   const words = readingWords(meta.key);
   const scale = meta.scale[mode === "anomaly" ? "anomaly" : "value"];
   const u = units(meta.units);
-  const where = scope === "global" ? t("el planeta", "the planet") : t("la Amazonía central", "the central Amazon");
+  const where = scope === "global" ? t("del planeta", "the planet") : t("de la Amazonía central", "the central Amazon");
 
   // portal al <body>: el panel ocupa toda la pantalla aunque se abra desde la barra de capas
   return createPortal(
@@ -144,7 +144,7 @@ export default function CompareView({
           <p className="leading-relaxed text-ink">
             {va !== null && vb !== null && diff !== null ? (
               <>
-                {t(`Promedio de ${where}: `, `Average over ${where}: `)}
+                {t(`Promedio ${where}: `, `Average over ${where}: `)}
                 <b>{fmt(va, meta.decimals)} {u}</b> ({a}) → <b>{fmt(vb, meta.decimals)} {u}</b> ({b}),{" "}
                 <b className={diff === 0 ? "" : "text-cyan"}>{diff >= 0 ? "+" : ""}{fmt(diff, meta.decimals)} {u}</b>.{" "}
                 <span className="text-muted">
