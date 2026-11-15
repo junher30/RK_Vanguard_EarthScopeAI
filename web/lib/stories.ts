@@ -5,7 +5,7 @@
 import { create } from "zustand";
 import { API_BASE } from "./api";
 import { runActions, type AgentAction } from "./agentActions";
-import { useMascot } from "./mascot";
+import { useAssistant } from "./assistant";
 import { tr } from "./i18n";
 import { useEvents } from "./events";
 import { useForecast } from "./forecast";
@@ -202,7 +202,7 @@ export const useStory = create<StoryState>((set, get) => ({
   start: (id) => {
     const story = STORIES.find((s) => s.id === id);
     if (!story) return;
-    useMascot.getState().setChatOpen(false);
+    useAssistant.getState().setChatOpen(false);
     set({ story: { ...story, steps: story.steps.filter((s) => !s.when || s.when()) }, step: 0, paused: false, menu: false });
     // los eventos en vivo se piden antes para que estén listos
     if (id === "live") useEvents.getState().setOn(true);
@@ -212,7 +212,7 @@ export const useStory = create<StoryState>((set, get) => ({
     run++;
     hush();
     useLayer.getState().setPlaying(false);
-    useMascot.getState().setMood("idle");
+    useAssistant.getState().setMood("idle");
     set({ story: null, text: "", stat: null });
   },
   next: () => {
@@ -231,7 +231,7 @@ export const useStory = create<StoryState>((set, get) => ({
   togglePause: () => {
     const p = !get().paused;
     set({ paused: p });
-    if (p) { run++; hush(); useMascot.getState().setMood("idle"); } else play();
+    if (p) { run++; hush(); useAssistant.getState().setMood("idle"); } else play();
   },
 }));
 
@@ -254,11 +254,11 @@ async function play() {
   const text = tr(s.es, s.en);
   useStory.setState({ text, stat: s.stat ?? null });
   runActions(s.actions);
-  useMascot.getState().setMood("talking");
+  useAssistant.getState().setMood("talking");
   const t0 = performance.now();
   await speak(text, id);
   if (id !== run) return;
-  useMascot.getState().setMood("idle");
+  useAssistant.getState().setMood("idle");
   // tiempo mínimo para mirar el globo
   const left = 2200 - (performance.now() - t0) + 1400;
   await sleep(Math.max(1200, left));

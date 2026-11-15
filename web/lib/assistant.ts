@@ -4,7 +4,9 @@ import { create } from "zustand";
 
 export type Mood = "idle" | "greet" | "thinking" | "talking" | "pointing";
 
-type MascotState = {
+// Estado del asistente EarthScope AI: chat abierto, recorrido guiado y "mood" (pensando, hablando…)
+// que usan el chat, la llamada de voz, las historias y el modo VR para mostrar actividad.
+type AssistantState = {
   mood: Mood;
   chatOpen: boolean;
   tour: boolean;
@@ -20,7 +22,7 @@ type MascotState = {
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-export const useMascot = create<MascotState>()((set) => ({
+export const useAssistant = create<AssistantState>()((set) => ({
   mood: "idle",
   chatOpen: false,
   tour: false,

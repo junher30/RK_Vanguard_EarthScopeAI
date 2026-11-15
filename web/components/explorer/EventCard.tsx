@@ -4,13 +4,13 @@
 import { motion } from "motion/react";
 import { Bot, ExternalLink, X } from "lucide-react";
 import { eventKindName, eventStyle, type GeoEvent } from "@/lib/events";
-import { useMascot } from "@/lib/mascot";
+import { useAssistant } from "@/lib/assistant";
 import { useT } from "@/lib/i18n";
 
 export default function EventCard({ ev, onClose }: { ev: GeoEvent; onClose: () => void }) {
   const t = useT();
   const st = eventStyle(ev.kind);
-  const ask = () => useMascot.getState().ask(t(
+  const ask = () => useAssistant.getState().ask(t(
     `Háblame del evento "${ev.title}" (${eventKindName(ev.kind)}, ${ev.lat}, ${ev.lng}). ¿Qué dicen los datos NASA de esa zona?`,
     `Tell me about the event "${ev.title}" (${eventKindName(ev.kind)}, ${ev.lat}, ${ev.lng}). What does NASA data say about that area?`,
   ));

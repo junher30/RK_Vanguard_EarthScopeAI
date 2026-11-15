@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { runActions, type AgentAction } from "@/lib/agentActions";
-import { useMascot, type Mood } from "@/lib/mascot";
+import { useAssistant, type Mood } from "@/lib/assistant";
 import { useLang } from "@/lib/i18n";
 
 const KEY = "earthscope-tour-done";
@@ -53,14 +53,14 @@ const STEPS: Step[] = [
 ];
 
 export default function Tutorial() {
-  const tour = useMascot((s) => s.tour);
+  const tour = useAssistant((s) => s.tour);
 
   // la primera visita arranca sola
   useEffect(() => {
     let done = false;
     try { done = localStorage.getItem(KEY) === "1"; } catch { /* sin almacenamiento */ }
     if (done) return;
-    const t = setTimeout(() => useMascot.getState().setTour(true), 900);
+    const t = setTimeout(() => useAssistant.getState().setTour(true), 900);
     return () => clearTimeout(t);
   }, []);
 
@@ -75,13 +75,13 @@ function Bubble() {
   useEffect(() => {
     const s = STEPS[i];
     runActions(s.actions);
-    useMascot.getState().pulse(s.mood, s.mood === "greet" ? 1000 : 2600);
+    useAssistant.getState().pulse(s.mood, s.mood === "greet" ? 1000 : 2600);
   }, [i]);
 
   const finish = (openChat: boolean) => {
     try { localStorage.setItem(KEY, "1"); } catch { /* sin almacenamiento */ }
-    useMascot.getState().setTour(false);
-    if (openChat) useMascot.getState().setChatOpen(true);
+    useAssistant.getState().setTour(false);
+    if (openChat) useAssistant.getState().setChatOpen(true);
   };
 
   const last = i === STEPS.length - 1;
@@ -93,7 +93,7 @@ function Bubble() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.96 }}
           transition={{ duration: 0.25 }}
-          className="holo-panel absolute bottom-24 right-4 z-40 w-[min(360px,calc(100vw-2rem))] p-4 lg:bottom-[250px] lg:right-[90px]"
+          className="holo-panel absolute bottom-24 right-4 z-40 w-[min(360px,calc(100vw-2rem))] p-4 lg:bottom-[92px] lg:right-[90px]"
           role="dialog"
           aria-label={t("Recorrido guiado", "Guided tour")}
         >
@@ -134,7 +134,7 @@ function Bubble() {
               {last ? t("Iniciar misión", "Start mission") : t("Siguiente", "Next")}
             </button>
           </div>
-          {/* línea hacia el holograma */}
+          {/* línea hacia el botón del asistente */}
           <span className="absolute -bottom-6 right-12 hidden h-6 w-px bg-gradient-to-b from-cyan to-transparent lg:block" />
         </motion.div>
   );

@@ -131,21 +131,14 @@ body {
   border: 2px solid #03121f;
 }
 
-/* nube de pensamiento de la mascota */
-@keyframes think-rise {
-  0% { transform: translateY(6px) scale(.6); opacity: 0; }
-  40% { opacity: 1; }
-  100% { transform: translateY(-4px) scale(1); opacity: 1; }
-}
+/* indicador "pensando" del asistente */
 @keyframes think-pip {
   0%, 100% { transform: translateY(0); opacity: .4; }
   50% { transform: translateY(-3px); opacity: 1; }
 }
-.think-dot { animation: think-rise 1.2s ease-out infinite alternate; }
-.think-cloud { animation: think-rise .5s ease-out both; }
 .think-pip { animation: think-pip .9s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .think-dot, .think-cloud, .think-pip { animation: none; }
+  .think-pip { animation: none; }
 }
 
 /* etiqueta de satélite en el globo */
@@ -164,40 +157,13 @@ body {
 }
 .globe-sat-label:hover { background: color-mix(in srgb, var(--sat) 25%, rgba(3, 10, 24, 0.85)); }
 
-/* mascota holográfica */
-.holo { filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.55)) drop-shadow(0 0 28px rgba(34, 211, 238, 0.25)); }
-.holo-sprite {
-  image-rendering: pixelated;
-  background-repeat: no-repeat;
-  transition: transform 0.4s ease;
-  animation: holo-flicker 6s infinite;
-  -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 2px, rgba(0, 0, 0, 0.82) 2px 3px);
-  mask-image: repeating-linear-gradient(to bottom, #000 0 2px, rgba(0, 0, 0, 0.82) 2px 3px);
-}
-.holo-base {
-  position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 70%;
-  height: 14px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.55), rgba(34, 211, 238, 0) 70%);
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
-}
+/* paneles con estilo holográfico */
 .holo-chip {
   border: 1px solid rgba(34, 211, 238, 0.5);
   border-radius: 6px;
   background: rgba(3, 12, 26, 0.85);
   box-shadow: 0 0 14px rgba(34, 211, 238, 0.3);
 }
-@keyframes holo-flicker {
-  0%, 96%, 100% { opacity: 1; }
-  97% { opacity: 0.75; }
-  98% { opacity: 1; }
-  99% { opacity: 0.85; }
-}
-@media (prefers-reduced-motion: reduce) { .holo-sprite { animation: none; } }
 .holo-panel {
   border: 1px solid rgba(34, 211, 238, 0.45);
   border-radius: 10px;

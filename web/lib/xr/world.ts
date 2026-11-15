@@ -1,13 +1,13 @@
 "use client";
 
-// Mundo VR/MR: globo con datos NASA, paneles de control, mascota y control con mandos o manos (Quest 3)
+// Mundo VR/MR: globo con datos NASA, paneles de control, asistente por voz y control con mandos o manos (Quest 3)
 import * as THREE from "three";
 import { XRControllerModelFactory } from "three/examples/jsm/webxr/XRControllerModelFactory.js";
 import { analyzeArea, askAgent } from "@/lib/api";
 import { addActionListener, runActions, type AgentAction } from "@/lib/agentActions";
 import { loadManifest, mapUrl, useLayer, type MapMode, type Manifest } from "@/lib/data";
 import { forecastUrl } from "@/lib/forecast";
-import { useMascot } from "@/lib/mascot";
+import { useAssistant } from "@/lib/assistant";
 import { useExplorer } from "@/lib/store";
 import { atmosphereMaterial, earthMaterial, sunDirection } from "@/lib/xr/earthShader";
 import { buzz, sfx } from "@/lib/xr/feedback";
@@ -274,39 +274,6 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   info.mesh.rotation.y = -0.6;
   scene.add(info.mesh);
 
-  // mascota
-  const mascot = new THREE.Group();
-  mascot.position.set(0.5, 1.6, -0.5);
-  mascot.rotation.y = -0.6;
-  scene.add(mascot);
-  // mascota pixel art como holograma: sprites de 8 cuadros sobre un proyector
-  const sheets: Record<string, THREE.Texture> = {};
-  const texLoader = new THREE.TextureLoader();
-  for (const [k, f] of [["welcome", "Robot_Welcome_Wave"], ["idle", "Robot_Hover_Idle"], ["talk", "Robot_Talking"]] as const) {
-    const tx = texLoader.load(`/mascot/${f}_sheet.png`);
-    tx.colorSpace = THREE.SRGBColorSpace;
-    tx.magFilter = THREE.NearestFilter;
-    tx.minFilter = THREE.NearestFilter;
-    tx.generateMipmaps = false;
-    tx.repeat.set(1 / 8, 1);
-    sheets[k] = tx;
-  }
-  const botMat = new THREE.MeshBasicMaterial({ map: sheets.welcome, transparent: true, alphaTest: 0.05, depthWrite: false, side: THREE.DoubleSide });
-  const bot = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), botMat);
-  bot.position.y = 0.2;
-  mascot.add(bot);
-  const glowMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
-  const pad = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.12, 48), glowMat);
-  pad.rotation.x = -Math.PI / 2;
-  mascot.add(pad);
-  const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.13, 0.08, 0.36, 32, 1, true),
-    new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
-  );
-  beam.position.y = 0.18;
-  mascot.add(beam);
-  let botSheet = "welcome", botFrame = 0, botNext = 0;
-  const tmpCam = new THREE.Vector3();
 
   // estado del panel de información
   const st = {
@@ -422,7 +389,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     st.head = `${name} en este punto`;
     st.busy = true;
     drawInfo();
-    useMascot.getState().setMood("thinking");
+    useAssistant.getState().setMood("thinking");
     try {
       const r = await analyzeArea(v, { point: { lat, lng } });
       st.body = r.ok ? `${r.summary}` : `${r.reason}`;
@@ -431,13 +398,13 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     }
     st.busy = false;
     drawInfo();
-    useMascot.getState().pulse("talking", 2500);
+    useAssistant.getState().pulse("talking", 2500);
   };
 
   const ask = async (q: string) => {
     st.busy = true;
     drawInfo();
-    useMascot.getState().setMood("thinking");
+    useAssistant.getState().setMood("thinking");
     const L = useLayer.getState();
     const ctx: Record<string, unknown> = { scope: L.scope, layer: L.variable, mode: L.mode, year: L.year, en_vr: true };
     if (st.point) ctx.point = st.point;
@@ -447,13 +414,13 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
       st.body = reply;
       runActions(actions);
       say(reply);
-      useMascot.getState().pulse("talking", Math.min(7000, 1200 + reply.length * 35));
+      useAssistant.getState().pulse("talking", Math.min(7000, 1200 + reply.length * 35));
     } catch (e) {
       st.head = q;
       st.body = (e as Error).message === "unavailable" || (e as Error).name === "TypeError"
         ? "EarthScope AI no está disponible: levanta el backend con una API key."
         : `Error: ${(e as Error).message}`;
-      useMascot.getState().setMood("idle");
+      useAssistant.getState().setMood("idle");
     }
     st.busy = false;
     drawInfo();
@@ -469,7 +436,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     const audio = await r.stop();
     st.busy = true;
     drawInfo();
-    useMascot.getState().setMood("thinking");
+    useAssistant.getState().setMood("thinking");
     const L = useLayer.getState();
     const ctx: Record<string, unknown> = { scope: L.scope, layer: L.variable, mode: L.mode, year: L.year, en_vr: true };
     if (st.point) ctx.point = st.point;
@@ -483,14 +450,14 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
         st.body = res.reply;
         runActions(res.actions);
         say(res.reply);
-        useMascot.getState().pulse("talking", Math.min(7000, 1200 + res.reply.length * 35));
+        useAssistant.getState().pulse("talking", Math.min(7000, 1200 + res.reply.length * 35));
       }
     } catch (e) {
       st.head = "Voz no disponible";
       st.body = (e as Error).message === "unavailable" || (e as Error).name === "TypeError"
         ? "Levanta el backend con GOOGLE_API_KEY para hablar con EarthScope AI."
         : `Error: ${(e as Error).message}`;
-      useMascot.getState().setMood("idle");
+      useAssistant.getState().setMood("idle");
     }
     st.busy = false;
     drawInfo();
@@ -509,7 +476,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
       starting = false;
       if (!wantMic) { sfx.release(); stopListening(); return; }
       sfx.select();
-      useMascot.getState().setMood("thinking");
+      useAssistant.getState().setMood("thinking");
     } catch {
       starting = false;
       st.head = "Sin micrófono";
@@ -518,7 +485,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     drawInfo();
   };
 
-  // acciones de la mascota también mueven el globo VR
+  // acciones del asistente también mueven el globo VR
   const offActions = addActionListener((actions: AgentAction[]) => {
     for (const a of actions) {
       if (a.type === "fly") flyTo(a.lat, a.lng);
@@ -627,7 +594,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     sfx.select();
     drawInfo();
     say(sat.es);
-    useMascot.getState().pulse("talking", 3000);
+    useAssistant.getState().pulse("talking", 3000);
   };
 
   // la mano está cerca de algo que se toca directamente (globo o paneles)
@@ -899,7 +866,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
         const p2 = raySphere(c);
         if (p2) dragTo(c, p2, dt);
       }
-      // botón A/X del mando: hablar con la mascota
+      // botón A/X del mando: hablar con el asistente
       const aNow = !!c.source?.gamepad?.buttons?.[4]?.pressed;
       if (aNow !== c.aWas) {
         c.aWas = aNow;
@@ -942,23 +909,6 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
     if (detail.obj.visible && t - lastDetail > 0.3) { lastDetail = t; detail.obj.updatePov(xrCam); }
     // pulso del marcador
     ring.scale.setScalar(1 + 0.25 * Math.sin(t * 4));
-    // mascota según su estado
-    const mood = useMascot.getState().mood;
-    if (mood === "greet" && botSheet !== "welcome") { botSheet = "welcome"; botFrame = 0; }
-    if (t > botNext) {
-      botNext = t + 0.125;
-      botFrame = (botFrame + 1) % 8;
-      if (botFrame === 0 && botSheet === "welcome") botSheet = "idle";
-      if (botSheet !== "welcome") botSheet = mood === "talking" ? "talk" : "idle";
-      botMat.map = sheets[botSheet];
-      botMat.map.offset.x = botFrame / 8;
-    }
-    // siempre de frente al usuario, flotando
-    mascot.lookAt(camera.getWorldPosition(tmpCam).setY(mascot.position.y));
-    bot.position.y = 0.2 + Math.sin(t * 1.6) * 0.01;
-    bot.rotation.z = mood === "thinking" ? Math.sin(t * 2.2) * 0.08 : 0;
-    botMat.opacity = Math.random() < 0.01 ? 0.7 : 0.95;
-    glowMat.opacity = (mood === "thinking" ? 0.55 : 0.35) + Math.sin(t * 3) * 0.08;
     renderer.render(scene, camera);
   });
 
@@ -966,7 +916,7 @@ export async function startXR(session: XRSession, mode: XRMode): Promise<() => v
   drawInfo();
   setLayerTexture();
   await renderer.xr.setSession(session);
-  useMascot.getState().pulse("greet", 1200);
+  useAssistant.getState().pulse("greet", 1200);
   // si ya hay un punto elegido en la web, lo mostramos
   const sel = useExplorer.getState().selection;
   if (sel) { flyTo(sel.lat, sel.lng); placeMarker(sel.lat, sel.lng); st.point = { lat: sel.lat, lng: sel.lng }; drawInfo(); }

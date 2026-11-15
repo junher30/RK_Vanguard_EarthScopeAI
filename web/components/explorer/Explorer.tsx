@@ -16,13 +16,13 @@ import { DATA_REGIONS, fmtCoord, regionCenter } from "@/lib/regions";
 import { useExplorer } from "@/lib/store";
 import StepRail from "./StepRail";
 import ChatPanel from "@/components/chat/ChatPanel";
-import Mascot from "@/components/chat/Mascot";
+import AssistantButton from "@/components/chat/AssistantButton";
 import CallBar, { CallButton } from "@/components/chat/CallBar";
 import Tutorial from "@/components/chat/Tutorial";
 import XRButtons from "@/components/xr/XRButtons";
 import SatelliteCard from "./SatelliteCard";
 import { satPosition, type Sat } from "@/lib/satellites";
-import { useMascot } from "@/lib/mascot";
+import { useAssistant } from "@/lib/assistant";
 import { setActionRunner, type AgentAction } from "@/lib/agentActions";
 import { LangToggle, initLang, tr, useT, varShort } from "@/lib/i18n";
 import { forecastUrl, futureYears, loadForecast, useForecast } from "@/lib/forecast";
@@ -179,7 +179,7 @@ export default function Explorer() {
     onSelect({ lat: m[0], lng: m[1], surface: "unknown", country: null, regionKey: region?.key ?? null });
   };
 
-  // acciones que pide la mascota: volar, marcar un punto y cambiar la capa
+  // acciones que pide el asistente: volar, marcar un punto y cambiar la capa
   useEffect(() => {
     setActionRunner((actions: AgentAction[]) => {
       setIntro(false);
@@ -230,7 +230,7 @@ export default function Explorer() {
         } else if (a.type === "events") {
           useEvents.getState().setOn(a.on);
         } else if (a.type === "tour") {
-          useMascot.getState().setTour(true);
+          useAssistant.getState().setTour(true);
         } else if (a.type === "layer") {
           const L = useLayer.getState();
           L.setScope(a.scope ?? "global");
@@ -391,7 +391,7 @@ export default function Explorer() {
       <StoryPlayer />
       <StoryMenu />
       <Methodology open={method} onClose={() => setMethod(false)} manifest={manifest} />
-      {!intro && ready && !storyOn && <Mascot />}
+      {!intro && ready && !storyOn && <AssistantButton />}
       {!intro && ready && <Tutorial />}
       {!intro && <CallBar />}
 
@@ -440,8 +440,8 @@ export default function Explorer() {
               </span>
             </h1>
             <p className="mt-4 max-w-md text-muted">
-              {t("Elige cualquier lugar del planeta, detecta tendencias, mira el futuro que predice nuestra red neuronal y comprueba cada conclusión con datos de satélites NASA.",
-                "Pick any place on the planet, detect trends, see the future our neural network predicts and trace every conclusion back to NASA satellite data.")}
+              {t("Elige cualquier lugar del planeta, detecta tendencias, explora una proyección experimental de IA y comprueba cada conclusión con datos de satélites NASA.",
+                "Pick any place on the planet, detect trends, explore an experimental AI projection and trace every conclusion back to NASA satellite data.")}
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <button onClick={() => { setIntro(false); }} className="btn-primary">
@@ -652,7 +652,7 @@ export default function Explorer() {
         <IconBtn label={t("Metodología", "Methodology")} onClick={() => setMethod(true)}>
           <BookOpen className="size-5" />
         </IconBtn>
-        <IconBtn label={t("Recorrido guiado", "Guided tour")} onClick={() => { setIntro(false); useMascot.getState().setTour(true); }}>
+        <IconBtn label={t("Recorrido guiado", "Guided tour")} onClick={() => { setIntro(false); useAssistant.getState().setTour(true); }}>
           <CircleHelp className="size-5" />
         </IconBtn>
       </motion.div>

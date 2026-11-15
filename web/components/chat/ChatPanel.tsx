@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Bot, Loader2, MessageCircle, Mic, Send, Square, X } from "lucide-react";
 import { askAgent } from "@/lib/api";
 import { runActions } from "@/lib/agentActions";
-import { useMascot } from "@/lib/mascot";
+import { useAssistant } from "@/lib/assistant";
 import { askVoice, startRecording, type Recording } from "@/lib/voice";
 
 type Msg = { role: "user" | "agent" | "error"; text: string };
@@ -53,14 +53,14 @@ function Markdown({ text }: { text: string }) {
 const SUGGESTIONS: [string, string][] = [
   ["¿Qué está pasando ahora en el planeta?", "What is happening on the planet right now?"],
   ["¿Qué pasa aquí? ¿Hace más calor?", "What is happening here? Is it getting warmer?"],
-  ["Muéstrame cómo se verá la vegetación en 2030", "Show me what vegetation will look like in 2030"],
+  ["Muéstrame la proyección experimental de vegetación para 2030", "Show me the experimental 2030 vegetation projection"],
 ];
 
 export default function ChatPanel() {
   const t = useT();
-  const open = useMascot((s) => s.chatOpen);
+  const open = useAssistant((s) => s.chatOpen);
   const setOpen = (o: boolean | ((x: boolean) => boolean)) =>
-    useMascot.getState().setChatOpen(typeof o === "function" ? o(useMascot.getState().chatOpen) : o);
+    useAssistant.getState().setChatOpen(typeof o === "function" ? o(useAssistant.getState().chatOpen) : o);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,7 +71,7 @@ export default function ChatPanel() {
 
   // saluda al abrir el chat
   useEffect(() => {
-    if (open) useMascot.getState().pulse("greet", 1000);
+    if (open) useAssistant.getState().pulse("greet", 1000);
   }, [open]);
 
   useEffect(() => {
@@ -79,10 +79,10 @@ export default function ChatPanel() {
   }, [msgs, busy]);
 
   // preguntas que llegan de otras partes (ficha de un evento, historias…)
-  const pending = useMascot((st) => st.pending);
+  const pending = useAssistant((st) => st.pending);
   useEffect(() => {
     if (!pending) return;
-    useMascot.setState({ pending: null });
+    useAssistant.setState({ pending: null });
     send(pending);
   }, [pending]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,8 +93,8 @@ export default function ChatPanel() {
     setText("");
     setMsgs((m) => [...m, { role: "user", text: message }]);
     setBusy(true);
-    const mascot = useMascot.getState();
-    mascot.setMood("thinking");
+    const assistant = useAssistant.getState();
+    assistant.setMood("thinking");
     try {
       const { reply, actions } = await askAgent(message, session.current, viewContext());
       runActions(actions);
@@ -102,10 +102,10 @@ export default function ChatPanel() {
       // señala el globo si lo movió, luego habla un rato según lo largo de la respuesta
       const talk = Math.min(7000, 1200 + reply.length * 35);
       if (actions?.some((a) => a.type === "fly" || a.type === "layer")) {
-        mascot.pulse("pointing", 1400);
-        setTimeout(() => useMascot.getState().mood === "pointing" && useMascot.getState().pulse("talking", talk), 1400);
+        assistant.pulse("pointing", 1400);
+        setTimeout(() => useAssistant.getState().mood === "pointing" && useAssistant.getState().pulse("talking", talk), 1400);
       } else {
-        mascot.pulse("talking", talk);
+        assistant.pulse("talking", talk);
       }
     } catch (e) {
       const err = e as Error;
@@ -115,7 +115,7 @@ export default function ChatPanel() {
           ? tr("IA no disponible: levanta el backend con una API key.", "Agent unavailable. Start the backend with an API key to use it.")
           : `${tr("Error de la IA", "Agent error")}: ${err.message}`;
       setMsgs((m) => [...m, { role: "error", text }]);
-      useMascot.getState().setMood("idle");
+      useAssistant.getState().setMood("idle");
     } finally {
       setBusy(false);
     }
@@ -130,23 +130,23 @@ export default function ChatPanel() {
     const audio = await r.stop();
     if (!session.current) session.current = sessionId();
     setBusy(true);
-    useMascot.getState().setMood("thinking");
+    useAssistant.getState().setMood("thinking");
     try {
       const res = await askVoice(audio, session.current, viewContext());
       if (!res.transcript) {
         setMsgs((m) => [...m, { role: "error", text: tr("No te escuché bien, inténtalo otra vez.", "I did not catch that, try again.") }]);
-        useMascot.getState().setMood("idle");
+        useAssistant.getState().setMood("idle");
       } else {
         runActions(res.actions);
         setMsgs((m) => [...m, { role: "user", text: res.transcript }, { role: "agent", text: res.reply }]);
-        useMascot.getState().pulse("talking", Math.min(7000, 1200 + res.reply.length * 35));
+        useAssistant.getState().pulse("talking", Math.min(7000, 1200 + res.reply.length * 35));
       }
     } catch (e) {
       const err = e as Error;
       setMsgs((m) => [...m, { role: "error", text: err.message === "unavailable" || err.name === "TypeError"
         ? tr("Voz no disponible: falta ELEVENLABS_API_KEY o GOOGLE_API_KEY en el backend.", "Voice unavailable: set ELEVENLABS_API_KEY or GOOGLE_API_KEY in the backend.")
         : `${tr("Error de voz", "Voice error")}: ${err.message}` }]);
-      useMascot.getState().setMood("idle");
+      useAssistant.getState().setMood("idle");
     } finally {
       setBusy(false);
     }
@@ -157,7 +157,7 @@ export default function ChatPanel() {
     try {
       rec.current = await startRecording(12, () => stopVoice());
       setListening(true);
-      useMascot.getState().setMood("thinking");
+      useAssistant.getState().setMood("thinking");
     } catch {
       setMsgs((m) => [...m, { role: "error", text: tr("Micrófono no disponible. Permítelo en el navegador.", "Microphone not available. Allow it in the browser.") }]);
     }
@@ -193,8 +193,8 @@ export default function ChatPanel() {
               {msgs.length === 0 && (
                 <div className="space-y-2">
                   <p className="text-muted">
-                    {t("Pregunta por tendencias, predicciones o lo que pasa ahora en la Tierra. Marca un punto y di \"aquí\".",
-                      "Ask about trends, predictions or what is happening on Earth now. Mark a point and say \"here\".")}
+                    {t("Pregunta por tendencias, proyecciones experimentales o lo que pasa ahora en la Tierra. Marca un punto y di \"aquí\".",
+                      "Ask about trends, experimental projections or what is happening on Earth now. Mark a point and say \"here\".")}
                   </p>
                   {SUGGESTIONS.map(([es, en]) => (
                     <button key={en} onClick={() => send(t(es, en))} className="btn w-full justify-start text-left">

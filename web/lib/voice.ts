@@ -1,6 +1,6 @@
 "use client";
 
-// grabar la voz como WAV de 16 kHz (sirve en el navegador del Quest) y preguntarle a la mascota
+// grabar la voz como WAV de 16 kHz (sirve en el navegador del Quest) y preguntarle al asistente
 import { API_BASE, type AgentReply, type ChatContext } from "./api";
 
 export type Recording = { stop: () => Promise<Blob>; cancel: () => void; level: () => number };

@@ -6,7 +6,7 @@ import { create } from "zustand";
 import { API_BASE, type AgentReply } from "./api";
 import { runActions } from "./agentActions";
 import { sessionId, viewContext } from "./agentContext";
-import { useMascot } from "./mascot";
+import { useAssistant } from "./assistant";
 import { downsample, wav } from "./voice";
 import { tr } from "./i18n";
 
@@ -47,7 +47,7 @@ export const useCall = create<CallStore>((set, get) => ({
   hangup: () => {
     engine?.stop();
     engine = null;
-    useMascot.getState().setMood("idle");
+    useAssistant.getState().setMood("idle");
     set({ active: false, level: 0 });
   },
   toggleMute: () => set({ muted: !get().muted }),
@@ -89,7 +89,7 @@ class Engine {
     this.src.connect(this.proc);
     this.proc.connect(this.ctx.destination);
     put({ phase: "listening" });
-    useMascot.getState().pulse("greet", 1000);
+    useAssistant.getState().pulse("greet", 1000);
   }
 
   stop() {
@@ -130,7 +130,7 @@ class Engine {
         this.speech = this.voiced;
         this.silent = 0;
         put({ phase: "hearing" });
-        useMascot.getState().setMood("idle");
+        useAssistant.getState().setMood("idle");
       }
       return;
     }
@@ -151,7 +151,7 @@ class Engine {
   private async send(audio: Blob) {
     const id = ++this.reqId;
     put({ phase: "thinking" });
-    useMascot.getState().setMood("thinking");
+    useAssistant.getState().setMood("thinking");
     try {
       const q = new URLSearchParams({ session: this.session, context: JSON.stringify(viewContext()), call: "true" });
       const r = await fetch(`${API_BASE}/api/v1/agent/voice?${q}`, {
@@ -162,7 +162,7 @@ class Engine {
       if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail ?? `API ${r.status}`);
       const res: AgentReply & { transcript: string } = await r.json();
       if (id !== this.reqId || !this.alive) return;
-      if (!res.transcript) { put({ phase: "listening" }); useMascot.getState().setMood("idle"); return; }
+      if (!res.transcript) { put({ phase: "listening" }); useAssistant.getState().setMood("idle"); return; }
       put({ you: res.transcript, ai: res.reply });
       // el globo se mueve mientras la IA empieza a hablar
       runActions(res.actions);
@@ -174,14 +174,14 @@ class Engine {
     }
     if (id === this.reqId && this.alive) {
       put({ phase: "listening" });
-      useMascot.getState().setMood("idle");
+      useAssistant.getState().setMood("idle");
     }
   }
 
   private async say(text: string, id: number) {
     if (!text) return;
     put({ phase: "speaking" });
-    useMascot.getState().setMood("talking");
+    useAssistant.getState().setMood("talking");
     let blob: Blob | null = null;
     try {
       const r = await fetch(`${API_BASE}/api/v1/agent/speak`, {
