@@ -9,7 +9,8 @@ import {
 import { fmt, loadSeries, useLayer, type Scope, type Series, type VariableMeta } from "@/lib/data";
 import { analyzeArea, type AreaInfo, type AreaTarget } from "@/lib/api";
 import { useExplorer } from "@/lib/store";
-import { tr, units, useT, varLabel, verdict } from "@/lib/i18n";
+import { tr, units, useLang, useT, varLabel, verdict } from "@/lib/i18n";
+import { GLOSSARY, plainTrend } from "@/lib/readings";
 import { forecastPoint, useForecast, type PointForecast } from "@/lib/forecast";
 import { Flame, Sparkles } from "lucide-react";
 import { namedHotspots, type Hotspot } from "@/lib/hotspots";
@@ -258,11 +259,16 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
         <TrendIcon className="size-4" />
         <span className="first-letter:uppercase">{verdict(t.verdict)}</span>
       </div>
+      {/* la misma conclusión en palabras simples */}
+      <PlainSummary
+        varKey={meta.key} verdictText={t.verdict} slope={t.sen_slope_per_year}
+        unitsText={units(series.units)} decimals={d} robust={series.robust}
+      />
 
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <Stat k={tt("Pendiente Sen", "Sen slope")} v={`${t.sen_slope_per_year >= 0 ? "+" : ""}${fmt(t.sen_slope_per_year, d + 1)}`} u={`${units(series.units)}/${tt("año", "yr")}`} />
-        <Stat k={tt("Cambio", "Change")} v={`${t.sen_change_pct_of_mean >= 0 ? "+" : ""}${fmt(t.sen_change_pct_of_mean, 1)}%`} u={tt("en el periodo", "over period")} />
-        <Stat k={tt("p-valor MK", "MK p-value")} v={fmt(t.seasonal_mann_kendall.p_value, 4)} u={tt("estacional", "seasonal")} />
+        <Stat k={tt("Pendiente Sen", "Sen slope")} help={tt(GLOSSARY.sen[0], GLOSSARY.sen[1])} v={`${t.sen_slope_per_year >= 0 ? "+" : ""}${fmt(t.sen_slope_per_year, d + 1)}`} u={`${units(series.units)}/${tt("año", "yr")}`} />
+        <Stat k={tt("Cambio", "Change")} help={tt(GLOSSARY.change[0], GLOSSARY.change[1])} v={`${t.sen_change_pct_of_mean >= 0 ? "+" : ""}${fmt(t.sen_change_pct_of_mean, 1)}%`} u={tt("en el periodo", "over period")} />
+        <Stat k={tt("p-valor MK", "MK p-value")} help={tt(GLOSSARY.p[0], GLOSSARY.p[1])} v={fmt(t.seasonal_mann_kendall.p_value, 4)} u={tt("estacional", "seasonal")} />
       </dl>
 
       {!series.robust && (
@@ -270,7 +276,8 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>
             {tt("No es robusto", "Not robust")}: {series.robustness.filter((r) => r.verdict !== t.verdict).map((r) => `${r.test.toLowerCase()} → ${verdict(r.verdict)} (p=${fmt(r.p_value, 2)})`).join("; ")}.{" "}
-            {tt("El resultado depende de unos pocos años extremos.", "The result depends on a few extreme years.")}
+            {tt("El resultado depende de unos pocos años extremos.", "The result depends on a few extreme years.")}{" "}
+            <span className="block pt-1 text-amber/80">{tt(GLOSSARY.robust[0], GLOSSARY.robust[1])}</span>
           </span>
         </div>
       )}
@@ -283,10 +290,42 @@ export default function InsightPanel({ scope, meta, regionLabel }: { scope: Scop
   );
 }
 
-function Stat({ k, v, u }: { k: string; v: string; u: string }) {
+function PlainSummary({ varKey, verdictText, slope, unitsText, decimals, robust }: {
+  varKey: string; verdictText: string; slope: number; unitsText: string; decimals: number; robust: boolean;
+}) {
+  const es = useLang((st) => st.lang) === "es";
   return (
-    <div className="rounded-lg border border-line/70 bg-deep/60 px-2 py-2">
-      <dt className="text-[10px] uppercase tracking-wider text-muted">{k}</dt>
+    <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs leading-relaxed text-ink">
+      {plainTrend(varKey, verdictText, slope, unitsText, decimals, robust, es)}
+    </p>
+  );
+}
+
+// cifra con un "?" que explica qué significa (al pasar el mouse o al tocar)
+function Stat({ k, v, u, help }: { k: string; v: string; u: string; help?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative rounded-lg border border-line/70 bg-deep/60 px-2 py-2">
+      <dt className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted">
+        {k}
+        {help && (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+            className="grid size-3.5 place-items-center rounded-full border border-muted/60 text-[8px] leading-none hover:border-cyan hover:text-cyan"
+            aria-label={help}
+          >
+            ?
+          </button>
+        )}
+      </dt>
+      {open && help && (
+        <span className="absolute bottom-full left-1/2 z-10 mb-1 w-48 -translate-x-1/2 rounded-md border border-line bg-[#04101c] p-2 text-left text-[11px] normal-case leading-snug tracking-normal text-ink shadow-lg">
+          {help}
+        </span>
+      )}
       <dd className="font-mono text-sm font-semibold">{v}</dd>
       <dd className="text-[10px] text-muted">{u}</dd>
     </div>

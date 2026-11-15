@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { motion } from "motion/react";
-import { CloudRain, Droplets, EyeOff, Globe, Leaf, MapPinned, Pause, Play, Thermometer, Wind } from "lucide-react";
+import { ArrowLeftRight, CloudRain, Droplets, EyeOff, Globe, Info, Leaf, MapPinned, Pause, Play, Thermometer, Wind } from "lucide-react";
 import { fmt, gradient, useLayer, useProbe, type Manifest, type MapMode, type Scope } from "@/lib/data";
-import { units, useT, varShort } from "@/lib/i18n";
+import { units, useLang, useT, varShort } from "@/lib/i18n";
+import { modeHint, readingWords } from "@/lib/readings";
+import CompareView from "./CompareView";
 import { useForecast } from "@/lib/forecast";
 import { Sparkles } from "lucide-react";
 
@@ -26,6 +29,8 @@ const ACCENT: Record<string, string> = {
 export default function DataDock({ manifest }: { manifest: Manifest | null }) {
   const { scope, setScope, variable, mode, year, playing, setVariable, setMode, setYear, setPlaying } = useLayer();
   const t = useT();
+  const es = useLang((st) => st.lang) === "es";
+  const [compare, setCompare] = useState(false);
   const meta = manifest?.variables.find((v) => v.key === variable) ?? null;
   const years = meta?.years ?? manifest?.variables[0]?.years ?? [2001, 2024];
   const first = years[0];
@@ -183,6 +188,13 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => { setPlaying(false); setCompare(true); }}
+              className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs text-ink transition-colors hover:border-cyan hover:text-cyan"
+              title={t("Comparar dos años con una cortina", "Compare two years with a slider")}
+            >
+              <ArrowLeftRight className="size-3.5" /> {t("Antes / después", "Before / after")}
+            </button>
             <div className="min-w-[180px] flex-1">
               <div className="relative">
                 <div className="h-2 rounded-full" style={{ background: gradient(scale.colors) }} />
@@ -198,10 +210,25 @@ export default function DataDock({ manifest }: { manifest: Manifest | null }) {
                 <span>{units(meta.units)}{mode === "trend" ? t(" / década", " / decade") : mode === "anomaly" ? ` vs ${first}–${realLast}` : ""}</span>
                 <span>{mode !== "value" ? "+" : ""}{fmt(scale.max, meta.decimals)}</span>
               </div>
+              {/* los extremos de la escala, en palabras */}
+              <div className="flex justify-between text-[10px] text-ink/80">
+                <span>{mode === "value" ? t(readingWords(meta.key).lowEs, readingWords(meta.key).lowEn) : t(readingWords(meta.key).lessEs, readingWords(meta.key).lessEn)}</span>
+                <span>{mode === "value" ? t(readingWords(meta.key).highEs, readingWords(meta.key).highEn) : t(readingWords(meta.key).moreEs, readingWords(meta.key).moreEn)}</span>
+              </div>
             </div>
           </div>
+          {/* ¿qué estoy viendo? */}
+          <p className="mt-2 flex gap-1.5 text-[11px] leading-snug text-muted">
+            <Info className="mt-px size-3.5 shrink-0 text-cyan" />
+            <span>{modeHint(meta.key, mode, year, first, realLast, es)}</span>
+          </p>
         </motion.div>
       )}
+      <AnimatePresence>
+        {compare && meta && (
+          <CompareView scope={scope} meta={meta} initialMode={mode} onClose={() => setCompare(false)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -31,6 +31,7 @@ flowchart TB
 |---|---|
 | [referencia/DOCUMENTACION_TECNICA.md](referencia/DOCUMENTACION_TECNICA.md) | Documento técnico principal: reto, reglas del evento, métodos, resultados, decisiones D1–D12, declaración de IA |
 | [referencia/DATOS_GLOBALES.md](referencia/DATOS_GLOBALES.md) | Datos de todo el planeta (0,5°), MERRA-2, mapas de tendencia y API de análisis de áreas |
+| Simulaciones experimentales (próxima fase) | Reglas, modelos y API en `docs/SIMULACIONES.md` del repo backend; cliente tipado en `web/lib/simulate.ts` |
 | [referencia/BLUEPRINT_PRODUCTO_FINAL.md](referencia/BLUEPRINT_PRODUCTO_FINAL.md) | Visión completa del producto (incluye lo que todavía no se construyó) |
 
 ## Gestión del trabajo

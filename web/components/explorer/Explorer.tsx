@@ -33,6 +33,7 @@ import StoryPlayer, { StoryMenu } from "@/components/story/StoryPlayer";
 import { useStory } from "@/lib/stories";
 import { applyShared, shareUrl } from "@/lib/share";
 import Methodology from "./Methodology";
+import EasterEggs from "./EasterEggs";
 
 const EarthGlobe = dynamic(() => import("@/components/globe/EarthGlobe"), { ssr: false });
 
@@ -181,6 +182,10 @@ export default function Explorer() {
     // un enlace compartido abre la vista exacta
     if (applyShared()) setIntro(false);
   }, []);
+  const eggFly = useCallback((lat: number, lng: number, alt?: number) => {
+    setIntro(false); setSpinning(false); api.current?.setSpin(false); api.current?.flyTo(lat, lng, alt);
+  }, []);
+  const eggNight = useCallback(() => setImagery("night"), []);
   const onBordersError = useCallback(() => setToast(tr("Fronteras no disponibles. Las coordenadas siguen funcionando.", "Country borders unavailable. Coordinates still work.")), []);
 
   const onSelect = (s: Parameters<typeof select>[0]) => {
@@ -714,6 +719,8 @@ export default function Explorer() {
       <AnimatePresence>
         {ev.on && !intro && !storyOn && <EventLegend key="legend" events={ev.events} status={ev.status} />}
       </AnimatePresence>
+
+      <EasterEggs flyTo={eggFly} night={eggNight} toast={setToast} />
 
       <AnimatePresence>
         {toast && (
